@@ -1,4 +1,4 @@
-# CampusGhosts 👻
+# CampusGhosts 
 
 **Privacy-Preserving Competitive Developer Infrastructure, Real-Time Anti-Cheat Duel Arena & $k$-Anonymized Diagnostic Engine**
 
