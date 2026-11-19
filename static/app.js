@@ -346,6 +346,28 @@ const App = (() => {
     toast('Launched Standalone Open Practice Arena (Guest Sandbox)', 'info');
   }
 
+  function launchSplitDuelArena() {
+    clearPolling();
+    if (window.SplitDuel && window.SplitDuel.launch) {
+      window.SplitDuel.launch();
+    } else {
+      document.getElementById('view-login-gate')?.classList.add('hidden');
+      document.getElementById('view-app-shell')?.classList.add('hidden');
+      document.getElementById('view-split-arena')?.classList.remove('hidden');
+    }
+  }
+
+  function showHomePortal() {
+    clearPolling();
+    if (window.SplitDuel && window.SplitDuel.close) {
+      window.SplitDuel.close();
+    } else {
+      document.getElementById('view-split-arena')?.classList.add('hidden');
+      document.getElementById('view-app-shell')?.classList.add('hidden');
+      document.getElementById('view-login-gate')?.classList.remove('hidden');
+    }
+  }
+
   // ── Duel Timer & Rival Telemetry Simulation ───────────────────
   function setDuelMode(mode) {
     duelMode = mode;
@@ -1685,6 +1707,8 @@ Keep your private salt confidential. Only reveal during placement audits.`;
     handleStudentLogin,
     handleFacultyLogin,
     launchOpenPracticeArena,
+    launchSplitDuelArena,
+    showHomePortal,
     quickFillStudent,
     quickFillFaculty,
     signOut,

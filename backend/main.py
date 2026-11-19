@@ -997,6 +997,223 @@ def reply_sos_flare(payload: ReplyFlareRequest) -> Dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
+# Phase 1-4 Compatibility Routes (/api/* alias mapping)
+# ---------------------------------------------------------------------------
+class CommitReq(BaseModel):
+    roll_no: str
+    secret_salt: str
+
+@app.post("/api/auth/commit")
+def api_auth_commit(payload: CommitReq):
+    c = generate_ghost_commitment(payload.roll_no, payload.secret_salt)
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT ghost_hash, alias, rating FROM ghost_profiles WHERE ghost_hash = ?;", (c["ghost_hash"],))
+        row = cursor.fetchone()
+        if not row:
+            with conn:
+                conn.execute(
+                    "INSERT INTO ghost_profiles (ghost_hash, alias, section, rating, streak, solved_count) VALUES (?, ?, ?, 1200, 1, 0);",
+                    (c["ghost_hash"], c["alias"], "CSE-1C")
+                )
+            elo = 1200
+            alias = c["alias"]
+        else:
+            elo = row["rating"]
+            alias = row["alias"]
+        return {
+            "commitment_hash": c["ghost_hash"],
+            "alias": alias,
+            "elo_rating": elo,
+            "human_trust_score": 100.0,
+        }
+    finally:
+        conn.close()
+
+class DuelSubmitReq(BaseModel):
+    commitment_hash: str
+    code: str
+    language: Optional[str] = "cpp"
+    problem_id: Optional[str] = "arr-bound"
+    human_trust_score: Optional[float] = None
+    opponent_elo: Optional[int] = 1200
+
+@app.post("/api/duel/submit")
+async def api_duel_submit(payload: DuelSubmitReq):
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT alias, rating FROM ghost_profiles WHERE ghost_hash = ?;", (payload.commitment_hash,))
+        row = cursor.fetchone()
+        current_elo = row["rating"] if row else 1200
+        alias = row["alias"] if row else "Ghost_Guest"
+    finally:
+        conn.close()
+
+    eval_res = await evaluate_code(payload.code, payload.language or "cpp", payload.problem_id or "arr-bound")
+    passed = eval_res.get("passed", False)
+    concept_tag = eval_res.get("concept_tag", "UNKNOWN")
+    severity = "HIGH" if not passed else "LOW"
+    runtime_ms = eval_res.get("runtime_ms", 12.0)
+    memory_kb = eval_res.get("memory_kb", 2048)
+
+    delta = calculate_rating_change(current_elo, payload.opponent_elo or 1200, passed, eval_res.get("optimization_score", 70))
+    new_elo = max(800, current_elo + delta)
+
+    conn = get_db_connection()
+    try:
+        with conn:
+            conn.execute("UPDATE ghost_profiles SET rating = ? WHERE ghost_hash = ?;", (new_elo, payload.commitment_hash))
+            now_iso = datetime.now(timezone.utc).isoformat()
+            conn.execute(
+                "INSERT INTO telemetry_events (ghost_hash, section, language, problem_id, topic, concept_tag, passed, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?);",
+                (payload.commitment_hash, "CSE-1C", payload.language or "cpp", payload.problem_id or "arr-bound", eval_res.get("topic", "Logic"), concept_tag, 1 if passed else 0, now_iso)
+            )
+    finally:
+        conn.close()
+
+    diag = {
+        "passed": passed,
+        "concept_tag": concept_tag,
+        "severity": severity,
+        "socratic_hint": eval_res.get("socratic_hint", "Review loop bounds and memory invariants."),
+        "est_time_ms": int(runtime_ms),
+        "est_memory_kb": int(memory_kb),
+        "source": eval_res.get("source", "offline_ast"),
+    }
+    return {
+        "diagnostic": diag,
+        "elo_delta": delta,
+        "new_elo": new_elo,
+        "human_trust_score": payload.human_trust_score if payload.human_trust_score is not None else 100.0,
+    }
+
+class PenaltyReq(BaseModel):
+    commitment_hash: str
+    reason: Optional[str] = "Adversarial or anti-system behavior detected"
+
+@app.post("/api/duel/penalty")
+def api_duel_penalty(payload: PenaltyReq):
+    conn = get_db_connection()
+    try:
+        with conn:
+            conn.execute("UPDATE ghost_profiles SET rating = MAX(800, rating - 25) WHERE ghost_hash = ?;", (payload.commitment_hash,))
+            cursor = conn.cursor()
+            cursor.execute("SELECT rating FROM ghost_profiles WHERE ghost_hash = ?;", (payload.commitment_hash,))
+            row = cursor.fetchone()
+            new_elo = row["rating"] if row else 1175
+        return {
+            "commitment_hash": payload.commitment_hash,
+            "penalty": -25,
+            "new_elo": new_elo,
+            "reason": payload.reason,
+        }
+    finally:
+        conn.close()
+
+@app.get("/api/faculty/telemetry")
+def api_faculty_telemetry(mode: str = Query("safe")):
+    k_thresh = 5 if mode == "safe" else 1
+    raw_mode = (mode == "raw")
+    clusters_dict = get_k_anonymous_telemetry(section="CSE-1C", k_threshold=k_thresh, raw_audit_mode=raw_mode)
+    clusters = []
+    for tag, meta in clusters_dict.items():
+        clusters.append({
+            "concept_tag": tag,
+            "count": meta["count"] if not meta["is_masked"] else None,
+            "masked": meta["is_masked"],
+            "label": f"MASKED (k < 5)" if meta["is_masked"] else str(meta["count"]),
+        })
+    return {"mode": mode, "clusters": clusters}
+
+class RemedialReq(BaseModel):
+    concept_tag: str
+    ghost_count: Optional[int] = 1
+
+@app.post("/api/faculty/remedial")
+async def api_faculty_remedial(payload: RemedialReq):
+    plan = await generate_remedial_plan(payload.concept_tag, "CSE-1C", payload.ghost_count or 1)
+    slides = []
+    for idx, s in enumerate(plan.get("slides", [])):
+        slides.append({
+            "slide_num": idx + 1,
+            "slide": idx + 1,
+            "heading": s.get("title", s.get("heading", f"Slide {idx+1}")),
+            "content": s.get("bullet_points", [s.get("body", "")])[0] if isinstance(s.get("bullet_points"), list) and s.get("bullet_points") else s.get("body", ""),
+            "body": s.get("bullet_points", [s.get("body", "")])[0] if isinstance(s.get("bullet_points"), list) and s.get("bullet_points") else s.get("body", ""),
+        })
+    viva = []
+    for v in plan.get("viva_questions", []):
+        viva.append({
+            "question": v.get("q", v.get("question", "")),
+            "answer": v.get("a", v.get("answer", "")),
+            "q": v.get("q", v.get("question", "")),
+            "a": v.get("a", v.get("answer", "")),
+        })
+    return {
+        "concept_tag": payload.concept_tag,
+        "affected_ghost_count": payload.ghost_count or 1,
+        "title": plan.get("topic_title", f"Remedial Lecture: {payload.concept_tag}"),
+        "slides": slides,
+        "viva_questions": viva,
+        "source": plan.get("source", "offline_fallback"),
+    }
+
+class ClaimReq(BaseModel):
+    roll_no: str
+    secret_salt: str
+
+@app.post("/api/claim/verify")
+def api_claim_verify(payload: ClaimReq):
+    res = verify_placement_claim(payload.roll_no, payload.secret_salt)
+    return {
+        "verified": res.get("verified", False),
+        "alias": res.get("alias", ""),
+        "elo_rating": res.get("rating", 1200),
+        "rank": res.get("percentile", 1),
+        "signed_proof_hash": res.get("proof_hash", ""),
+        "detail": res.get("detail", ""),
+    }
+
+@app.get("/api/leaderboard")
+def api_leaderboard():
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT alias, rating FROM ghost_profiles ORDER BY rating DESC LIMIT 10;")
+        rows = cursor.fetchall()
+        board = [
+            {"rank": i + 1, "alias": r["alias"], "elo_rating": r["rating"], "human_trust_score": 100.0}
+            for i, r in enumerate(rows)
+        ]
+        return {"leaderboard": board}
+    finally:
+        conn.close()
+
+@app.get("/api/debug/schema-inspect")
+def api_debug_schema_inspect():
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT roll_number, registered_at FROM enrolled_roll_registry LIMIT 5;")
+        students = [dict(r) for r in cursor.fetchall()]
+        cursor.execute("SELECT ghost_hash, alias, rating FROM ghost_profiles LIMIT 5;")
+        ghosts = [dict(r) for r in cursor.fetchall()]
+        schemas = {}
+        for t in ("enrolled_roll_registry", "ghost_profiles", "telemetry_events", "problems"):
+            cursor.execute(f"PRAGMA table_info({t});")
+            schemas[t] = [dict(r) for r in cursor.fetchall()]
+        return {
+            "verified_students_sample": students,
+            "ghost_profiles_sample": ghosts,
+            "schemas": schemas,
+        }
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
 # Static Files Mounting (AFTER all /api/v1/* routes to prevent route shadowing)
 # ---------------------------------------------------------------------------
 static_dir = Path(__file__).resolve().parent.parent / "static"
