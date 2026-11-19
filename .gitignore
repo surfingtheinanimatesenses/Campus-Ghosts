@@ -1,0 +1,11 @@
+keys.json
+*.db
+*.db-wal
+*.db-shm
+__pycache__/
+.pytest_cache/
+.env
+.venv
+env/
+venv/
+.DS_Store
