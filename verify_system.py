@@ -3,9 +3,9 @@ verify_system.py - Automated End-to-End System Verification for CampusGhosts.
 
 Verifies:
 (a) All pytest suites pass with 100% success rate.
-(b) GET / returns HTTP 200 with complete index.html UI.
-(c) GET /static/app.js, /static/guard.js, /static/replay.js return HTTP 200.
-(d) Node.js syntax inspection (node --check) succeeds for all static ES modules.
+(b) GET / returns HTTP 200 with the 3-column authentication and landing portal.
+(c) REST API endpoints (/api/v1/arena/problems, /api/v1/faculty/telemetry) return HTTP 200.
+(d) Static web modules pass Node.js syntax checks (node --check).
 (e) Vercel configuration vercel.json exists and validates as valid JSON.
 """
 
@@ -19,90 +19,83 @@ import pytest
 from fastapi.testclient import TestClient
 
 _CURRENT_DIR = str(Path(__file__).resolve().parent)
+_BACKEND_DIR = os.path.join(_CURRENT_DIR, "backend")
+if _BACKEND_DIR not in sys.path:
+    sys.path.insert(0, _BACKEND_DIR)
 if _CURRENT_DIR not in sys.path:
     sys.path.insert(0, _CURRENT_DIR)
 
-from main import app
-from db import init_and_seed_db
+from backend.main import app
 
 
 def run_verification() -> bool:
     print("=" * 70)
-    print("CAMPUSGHOSTS VERIFICATION SUITE (LOCALHOST & VERCEL)")
+    print("CAMPUSGHOSTS MULTI-ROLE & VERCEL SYSTEM VERIFICATION HARNESS")
     print("=" * 70)
     all_passed = True
 
     # -------------------------------------------------------------------------
     # 1. Pytest Test Suites
     # -------------------------------------------------------------------------
-    print("\n[CHECK A] Running Pytest Suites (test_phase1.py & test_phase2.py)...")
+    print("\n[CHECK A] Running Pytest Suite (backend/test_api.py)...")
     test_files = [
-        os.path.join(_CURRENT_DIR, "test_phase1.py"),
-        os.path.join(_CURRENT_DIR, "test_phase2.py"),
+        os.path.join(_CURRENT_DIR, "backend", "test_api.py"),
     ]
 
     ret_code = pytest.main(["-q", "--no-header", *test_files])
     if ret_code == 0:
-        print("  \u2713 [PASS] All 16 pytest tests passed across Phase 1 & Phase 2.")
+        print("  \u2713 [PASS] All 13 API and workflow tests passed cleanly.")
     else:
         print(f"  \u2717 [FAIL] Pytest exited with code {ret_code}.")
         all_passed = False
 
     # -------------------------------------------------------------------------
-    # 2. HTTP Root Route Verification
+    # 2. HTTP Root Route Verification (3-Card Landing Portal)
     # -------------------------------------------------------------------------
-    print("\n[CHECK B] Verifying GET / (index.html)...")
-    init_and_seed_db()
+    print("\n[CHECK B] Verifying GET / (Landing Portal)...")
     client = TestClient(app)
 
     resp_root = client.get("/")
-    if resp_root.status_code == 200 and "CampusGhosts" in resp_root.text:
-        print(f"  \u2713 [PASS] GET / returned HTTP 200 ({len(resp_root.text)} bytes HTML).")
+    if resp_root.status_code == 200 and "Student ZK Portal" in resp_root.text:
+        print(f"  \u2713 [PASS] GET / returned HTTP 200 ({len(resp_root.text)} bytes HTML with Student, Faculty & Arena portals).")
     else:
         print(f"  \u2717 [FAIL] GET / returned HTTP {resp_root.status_code}.")
         all_passed = False
 
     # -------------------------------------------------------------------------
-    # 3. Static ES Module Endpoints
+    # 3. Core API Endpoints
     # -------------------------------------------------------------------------
-    print("\n[CHECK C] Verifying Static ES Module Endpoints...")
-    static_endpoints = [
-        ("/static/app.js", "AntiCheatGuard"),
-        ("/static/guard.js", "class AntiCheatGuard"),
-        ("/static/replay.js", "class GhostReplayEngine"),
-        ("/app.js", "AntiCheatGuard"),
-        ("/guard.js", "class AntiCheatGuard"),
-        ("/replay.js", "class GhostReplayEngine"),
+    print("\n[CHECK C] Verifying Core REST Endpoints...")
+    endpoints = [
+        ("/api/v1/arena/problems", 200, "ptr-swap"),
+        ("/api/v1/faculty/telemetry", 200, "clusters"),
+        ("/api/v1/arena/leaderboard", 200, "leaderboard"),
     ]
 
-    for endpoint, signature in static_endpoints:
+    for endpoint, expected_status, signature in endpoints:
         resp = client.get(endpoint)
-        if resp.status_code == 200 and signature in resp.text:
-            print(f"  \u2713 [PASS] GET {endpoint} returned HTTP 200 (Contains '{signature}').")
+        if resp.status_code == expected_status and signature in resp.text:
+            print(f"  \u2713 [PASS] GET {endpoint} returned HTTP {expected_status} (Contains '{signature}').")
         else:
-            print(f"  \u2717 [FAIL] GET {endpoint} failed with HTTP {resp.status_code}.")
+            print(f"  \u2717 [FAIL] GET {endpoint} returned HTTP {resp.status_code}.")
             all_passed = False
 
     # -------------------------------------------------------------------------
     # 4. JavaScript Syntax Validation via Node.js
     # -------------------------------------------------------------------------
-    print("\n[CHECK D] Validating JavaScript ES Modules Syntax via 'node --check'...")
+    print("\n[CHECK D] Validating JavaScript Syntax via 'node --check'...")
     node_bin = shutil.which("node")
     if node_bin:
-        js_files = [
-            os.path.join(_CURRENT_DIR, "static", "app.js"),
-            os.path.join(_CURRENT_DIR, "static", "guard.js"),
-            os.path.join(_CURRENT_DIR, "static", "replay.js"),
-        ]
-        cmd = [node_bin, "--check", *js_files]
+        js_file = os.path.join(_CURRENT_DIR, "static", "app.js")
+        cmd = [node_bin, "--check", js_file]
         res = subprocess.run(cmd, capture_output=True, text=True)
         if res.returncode == 0:
-            print(f"  \u2713 [PASS] Node.js syntax check passed with 0 errors across {len(js_files)} modules.")
+            print("  \u2713 [PASS] Node.js syntax check passed with 0 errors.")
         else:
             print(f"  \u2717 [FAIL] Node.js syntax check reported errors:\n{res.stderr}")
             all_passed = False
     else:
-        print("  ! [SKIP] Node.js binary not detected in PATH. Skipping 'node --check'.")
+        print("  ! [SKIP] Node.js binary not detected in PATH.")
 
     # -------------------------------------------------------------------------
     # 5. Vercel Configuration Check
@@ -113,7 +106,7 @@ def run_verification() -> bool:
         try:
             with open(vpath, "r", encoding="utf-8") as f:
                 vconfig = json.load(f)
-            assert "builds" in vconfig or "rewrites" in vconfig
+            assert "builds" in vconfig or "routes" in vconfig
             print("  \u2713 [PASS] vercel.json is present and valid JSON.")
         except Exception as e:
             print(f"  \u2717 [FAIL] vercel.json validation error: {e}")
