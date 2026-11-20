@@ -1,138 +1,55 @@
-# CampusGhosts 
+# CampusGhosts
 
-**Privacy-Preserving Competitive Developer Infrastructure, Real-Time Anti-Cheat Duel Arena & $k$-Anonymized Diagnostic Engine**
+## Niche Problem Statement & Tracks
 
-Built for hackathons and production environments, CampusGhosts runs identically on `localhost:8000` and **Vercel** (`@vercel/python`) with zero build steps.
+* **Primary Tracks:** Track 03 (Smart Education) & Track 04 (Cybersecurity / Privacy)
 
----
-
-## 1. Architectural Guarantees & Privacy Model
-
-1. **Split-Table Isolation (Zero Foreign Keys)**:
-   - `verified_students`: Institutional roll number and verification timestamp only.
-   - `ghost_profiles`: Pseudonymous alias (`Cipher_XX`), performance ELO rating, and live human trust score. No roll numbers stored.
-   - `telemetry_events`: Error concept tags and severity. Unlinked from institutional identities.
-2. **One-Way Blind Commitment**:
-   - `commitment_hash = SHA256(roll_number || secret_salt)`
-   - Server cannot reverse the commitment hash back to the student's roll number.
-3. **$k$-Anonymity Governance ($k \ge 5$)**:
-   - Concept failure bottlenecks with $< 5$ distinct students are masked as `MASKED (k < 5)` in safe mode to protect student privacy from faculty de-anonymization.
-4. **Tamper-Proof Placement Claim Proof**:
-   - Students can verify their cohort percentile and ELO standing without revealing their duel history:
-   - `proof_hash = SHA256(commitment_hash : elo_rating : "KRMU_VERIFIED")`
+* **Niche Problem Statement:** Privacy-Preserving Coding Assessment & Anti-Cheat Classroom Telemetry — eliminating first-year "Leaderboard Anxiety" and LLM copy-pasting in programming labs while giving faculty real-time, mathematically anonymized visibility into batch-wide conceptual bottlenecks without singling out individual students.
 
 ---
 
-## 2. Directory Structure
+## Complete Feature & Technical Point List
 
-```text
-campusghosts-vercel/
-├── main.py              # FastAPI single-origin server, REST APIs, static file routing
-├── db.py                # Split-table SQLite schema, Vercel /tmp handler, 42-student seeder
-├── ai_engine.py         # Multi-key Groq pooler (Llama-3.3-70B) + deterministic offline fallback
-├── rating.py            # Time & memory optimization-weighted logistic ELO calculator
-├── vercel.json          # Vercel Python serverless routing config (@vercel/python)
-├── requirements.txt     # fastapi, uvicorn, pydantic, httpx, pytest
-├── keys.example.json    # Local template for Groq API keys
-├── .gitignore           # Ignores keys.json, *.db, __pycache__, .venv
-├── README.md            # Deployment & architecture documentation
-├── verify_system.py     # End-to-end smoke test suite (Checks A through E)
-├── test_phase1.py       # Pytest unit & schema test suite (6 tests)
-├── test_phase2.py       # Pytest integration & transition test suite (10 tests)
-└── static/
-    ├── index.html       # Dark cyberpunk split-screen God Mode UI
-    ├── app.js           # Arena wiring, live heatmap updates, DB inspector, Claim Verifier
-    ├── guard.js         # Anti-cheat (paste blocker, 3-strike tab/fullscreen monitor, telemetry)
-    ├── replay.js        # 1v1 Ghost competitor keystroke replay & one-click demo presets
-    └── vendor/          # Offline fallback libraries (Chart.js, Lucide, Tailwind CSS)
-```
+### 1. Cryptographic Blind Identity Commitments (Split-Table SQLite)
+* Strips university roll numbers via `SHA-256(Roll_No || Secret_Salt)` into untraceable aliases (e.g., `Cipher_99`).
+* Stores enrollment verification (`verified_students`) and coding activity (`ghost_profiles`) in unlinked tables with zero foreign keys or join columns.
 
----
+### 2. Side-by-Side 1v1 Live Duel Arena
+* Split-screen C++/Python coding arena displaying the active student's editor alongside a live peer competitor's real-time code progression.
 
-## 3. Quickstart: Running on Localhost
+### 3. Behavioral Anti-Cheat & Bot Detection Guard
+* **Copy-Paste & Drop Blocker:** Intercepts and blocks `paste`, `drop`, and `Ctrl+V` events inside the code editor to stop AI copy-pasting.
+* **3-Strike Tab & Fullscreen Enforcement:** Tracks tab switches, window blurs, and fullscreen exits during active matches; 3 strikes disqualify the session and deduct ELO rating.
+* **Human vs. Bot Telemetry:** Analyzes mouse pointer direction shifts, cursor velocity variance, and keystroke flight intervals to compute a live Human Trust Score (`0–100%`).
 
-### Prerequisites
-- Python 3.10+
-- (Optional) Node.js (for `node --check` static analysis)
+### 4. Time & Memory Optimization-Weighted ELO Engine
+* Updates leaderboard ratings dynamically based on match outcome ($S$ vs. expected score $E$) plus normalized execution time and memory efficiency:
 
-### Installation
-```bash
-cd campusghosts-vercel
-pip install -r requirements.txt
-```
+$$\Delta R = \text{round}\left(32(S - E) + 10\left(\frac{T_{\max} - T_{\text{used}}}{T_{\max}} + \frac{M_{\max} - M_{\text{used}}}{M_{\max}}\right)\right)$$
 
-### Configure Groq API Key (Optional)
-To use Groq's `llama-3.3-70b-versatile` LLM:
-```bash
-# Option A: Environment Variable
-export GROQ_API_KEY="gsk_your_groq_key_here"  # Linux / macOS
-$env:GROQ_API_KEY="gsk_your_groq_key_here"    # Windows PowerShell
+### 5. Structured AI Socratic Code Coach (With Offline Fallback)
+* Round-robins across pooled Groq (`Llama-3.3-70B`) API keys, falling back to deterministic local regex/AST rules if offline.
+* Outputs strict JSON bug tags (`POINTER_DEREF_NULL`, `ARRAY_OUT_OF_BOUNDS`, `LOOP_INFINITE_BOUND`, `RECURSION_NO_BASE`) and delivers a 2-line Socratic hint without revealing solution code.
 
-# Option B: Local keys.json file
-cp keys.example.json keys.json
-# Edit keys.json with your key: {"groq": ["gsk_..."]}
-```
-*Note: If no key is configured, CampusGhosts seamlessly uses its deterministic offline AST diagnostic engine with zero errors.*
+### 6. $k$-Anonymous Faculty Bottleneck Heatmap ($k \ge 5$)
+* Enforces `HAVING COUNT(DISTINCT commitment_hash) >= 5` in SQL so failing micro-concepts are only revealed to professors when at least 5 distinct students struggle—preventing individual singling-out.
+* Includes a live **Safe View ($k \ge 5$)** vs. **Raw DB Audit** toggle for live verification.
 
-### Start Server
-```bash
-python -m uvicorn main:app --host 0.0.0.0 --port 8000
-```
-Open **`http://localhost:8000`** in any modern web browser.
+### 7. 1-Click AI Remedial Lecture & Viva Generator
+* Converts the top aggregated batch failure tag into a 10-minute, 5-slide remedial lecture outline and 3 viva questions for the professor's next class.
+
+### 8. Cryptographic Placement Claim Verifier
+* Allows high-ranking students to prove ownership of their Ghost alias to the Placement Cell by recomputing `SHA-256(Roll_No || Secret_Salt)` and exporting a signed verification hash—while keeping early failed attempts permanently private.
 
 ---
 
-## 4. One-Click Deployment to Vercel
+## CampusGhosts Tech Stack
 
-CampusGhosts is pre-configured with `vercel.json` for `@vercel/python`.
-
-### Deployment Steps:
-1. **Push to GitHub** or run Vercel CLI directly:
-   ```bash
-   vercel
-   ```
-2. **Environment Variables**:
-   In your Vercel Project Dashboard, navigate to **Settings > Environment Variables** and add:
-   - `GROQ_API_KEY`: `gsk_your_groq_key` (optional, for live Groq Llama-3.3-70B evaluations).
-3. **Serverless Filesystem Handling**:
-   - `db.py` automatically detects Vercel's serverless runtime and creates `/tmp/campusghosts.db`.
-   - On cold start, the database is seeded idempotently with 42 student profiles and calibrated failure telemetry.
-
----
-
-## 5. Automated System Verification
-
-Run the full automated verification harness:
-```bash
-python verify_system.py
-```
-
-The test harness validates:
-- **CHECK A**: 16/16 pytest unit and API tests pass cleanly.
-- **CHECK B**: `GET /` serves the complete dark cyberpunk God Mode UI.
-- **CHECK C**: Static ES modules (`app.js`, `guard.js`, `replay.js`) serve under both `/static/*` and direct root paths.
-- **CHECK D**: JavaScript ES modules pass `node --check` with 0 syntax errors.
-- **CHECK E**: `vercel.json` configuration is structurally valid.
-
----
-
-## 6. Demo Walkthrough & Cheat Sheet
-
-1. **Student Commitment Auth**:
-   - Default Roll Number: `2601010043`
-   - Default Secret Salt: `krmu2026_salt` (or click **Random** to generate 128-bit entropy).
-   - Click **Enter as Ghost** to anchor your identity.
-2. **1v1 Duel Arena**:
-   - Click **Start 1v1 Duel** (arms anti-cheat guard and starts phantom competitor stream).
-   - Use the demo preset buttons:
-     - `Load Buggy Array (k=4->5)`: Demonstrates off-by-one bug triggering $k$-anonymity threshold transition.
-     - `Load Null Pointer Bug`: Triggers SIGSEGV pointer dereference diagnostic.
-     - `Load Clean Solution`: Awards positive ELO optimization bonus.
-3. **Anti-Cheat Guard**:
-   - Try pasting into the student editor (intercepted and flagged as bot action).
-   - Switch browser tabs (triggers debounce strike counter; 3 strikes disqualifies).
-4. **Faculty Telemetry & K-Anonymity**:
-   - Toggle **Safe View ($k \ge 5$)** vs. **Raw View** to observe `ARRAY_OUT_OF_BOUNDS` unmasking.
-   - Click any cluster bar to open the automated 5-slide pedagogical remedial deck.
-5. **Placement Claim Auditor**:
-   - Verify any roll number + secret salt pair to generate a verifiable signed placement proof.
+| Layer | Technologies |
+| :--- | :--- |
+| **Backend & Runtime** | Python, FastAPI (single-origin REST API & static file server), Uvicorn (local), Vercel Python Serverless Runtime (`@vercel/python`) |
+| **Database & Privacy Layer** | SQLite3 (unlinked split-table schema with zero foreign keys; `/tmp` ephemeral storage on Vercel, local `.db` file offline), SQL `HAVING COUNT(DISTINCT commitment_hash) >= 5` $k$-anonymity aggregation guard, Python `hashlib` SHA-256 salted commitments |
+| **AI & Diagnostic Stack** | Groq API (`llama-3.3-70b-versatile`) via an async round-robin multi-key pooler (`httpx`), backed by a deterministic offline regex/AST rule engine |
+| **Frontend & Visualization** | Vanilla HTML5, ES6+ JavaScript modules (`app.js`, `guard.js`, `replay.js`), Tailwind CSS (CDN), Chart.js (CDN) for real-time faculty heatmaps |
+| **Client-Side Anti-Cheat Telemetry** | Native browser event listeners (`paste` / `drop` interception, debounced `visibilitychange` / `blur` / `fullscreenchange` 3-strike tracker, `mousemove` angular velocity + `keydown` flight-time scoring) |
+| **Deployment & Testing** | GitHub + Vercel CI/CD (`vercel.json`), `pytest`, FastAPI `TestClient` for automated end-to-end verification |
