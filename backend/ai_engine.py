@@ -688,6 +688,10 @@ def evaluate_code(*args, **kwargs) -> dict:
                     "source": sandbox_res.get("source", "sandbox"),
                     "stdout": sandbox_res.get("stdout", ""),
                     "compiler_error": sandbox_res.get("compiler_error", ""),
+                    "test_results": sandbox_res.get("test_results", []),
+                    "root_cause": sandbox_res.get("root_cause", ""),
+                    "misconception": sandbox_res.get("misconception", ""),
+                    "invariant_to_preserve": sandbox_res.get("invariant_to_preserve", ""),
                 }
         except Exception as e:
             logger.warning("Container sandbox execution error: %s", e)

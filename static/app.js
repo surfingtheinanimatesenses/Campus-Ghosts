@@ -915,29 +915,41 @@ const App = (() => {
     }
 
     if (container) {
-      container.innerHTML = `
-        <div class="test-row ${passed ? 'passed' : 'failed'}">
-          <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full ${passed ? 'bg-emerald' : 'bg-crimson'}"></span>
-            <span class="text-xs font-mono">Case 1 (Boundary Check)</span>
+      if (diag.test_results && Array.isArray(diag.test_results) && diag.test_results.length > 0) {
+        container.innerHTML = diag.test_results.map(tr => `
+          <div class="test-row ${tr.passed ? 'passed' : 'failed'}">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full ${tr.passed ? 'bg-emerald' : 'bg-crimson'}"></span>
+              <span class="text-xs font-mono">${esc(tr.name)}</span>
+            </div>
+            <span class="text-[10px] font-mono font-semibold ${tr.passed ? 'text-emerald' : 'text-crimson'}">${tr.passed ? 'PASS' : 'FAIL'}</span>
           </div>
-          <span class="text-[10px] font-mono font-semibold ${passed ? 'text-emerald' : 'text-crimson'}">${passed ? 'PASS' : 'FAIL'}</span>
-        </div>
-        <div class="test-row ${passed ? 'passed' : 'failed'}">
-          <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full ${passed ? 'bg-emerald' : 'bg-crimson'}"></span>
-            <span class="text-xs font-mono">Case 2 (Nominal Execution)</span>
+        `).join('');
+      } else {
+        container.innerHTML = `
+          <div class="test-row ${passed ? 'passed' : 'failed'}">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full ${passed ? 'bg-emerald' : 'bg-crimson'}"></span>
+              <span class="text-xs font-mono">Case 1 (Boundary Check)</span>
+            </div>
+            <span class="text-[10px] font-mono font-semibold ${passed ? 'text-emerald' : 'text-crimson'}">${passed ? 'PASS' : 'FAIL'}</span>
           </div>
-          <span class="text-[10px] font-mono font-semibold ${passed ? 'text-emerald' : 'text-crimson'}">${passed ? 'PASS' : 'FAIL'}</span>
-        </div>
-        <div class="test-row ${passed ? 'passed' : 'failed'}">
-          <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full ${passed ? 'bg-emerald' : 'bg-crimson'}"></span>
-            <span class="text-xs font-mono">Case 3 (Memory Invariant)</span>
+          <div class="test-row ${passed ? 'passed' : 'failed'}">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full ${passed ? 'bg-emerald' : 'bg-crimson'}"></span>
+              <span class="text-xs font-mono">Case 2 (Nominal Execution)</span>
+            </div>
+            <span class="text-[10px] font-mono font-semibold ${passed ? 'text-emerald' : 'text-crimson'}">${passed ? 'PASS' : 'FAIL'}</span>
           </div>
-          <span class="text-[10px] font-mono font-semibold ${passed ? 'text-emerald' : 'text-crimson'}">${passed ? 'PASS' : 'FAIL'}</span>
-        </div>
-      `;
+          <div class="test-row ${passed ? 'passed' : 'failed'}">
+            <div class="flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full ${passed ? 'bg-emerald' : 'bg-crimson'}"></span>
+              <span class="text-xs font-mono">Case 3 (Memory Invariant)</span>
+            </div>
+            <span class="text-[10px] font-mono font-semibold ${passed ? 'text-emerald' : 'text-crimson'}">${passed ? 'PASS' : 'FAIL'}</span>
+          </div>
+        `;
+      }
     }
 
     // Update Performance Profiler Panel
