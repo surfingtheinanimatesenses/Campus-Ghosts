@@ -79,17 +79,25 @@
       <div class="card p-5 flex flex-col justify-between relative overflow-hidden">
         <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500/40 via-emerald-500 to-emerald-500/20"></div>
         <div>
-          <div class="flex items-center justify-between mb-2.5">
+          <div class="flex items-center justify-between mb-2">
             <div class="flex items-center gap-2">
               <i data-lucide="user-check" class="w-4 h-4 text-emerald"></i>
               <h2 class="text-sm font-semibold">Student ZK Portal</h2>
             </div>
             <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald/10 text-emerald border border-emerald/20">ZK Shield</span>
           </div>
-          <p class="text-xs text-text-muted mb-3.5 leading-relaxed">
-            Salted SHA-256 commitments unlink your institutional roll from cohort standings and faculty metrics.
-          </p>
 
+          <!-- Auth Mode Selector (Roll Salt vs Email OTP) -->
+          <div class="flex items-center gap-1 bg-surface p-1 rounded-md border border-border mb-3 text-[11px] font-mono">
+            <button type="button" id="tab-auth-roll" class="flex-1 py-1 rounded bg-zinc-800 text-zinc-100 font-semibold cursor-pointer" onclick="App.switchStudentAuthMode('roll')">
+              Roll + Salt
+            </button>
+            <button type="button" id="tab-auth-email" class="flex-1 py-1 rounded text-zinc-400 hover:text-zinc-200 cursor-pointer" onclick="App.switchStudentAuthMode('email')">
+              Campus Email OTP
+            </button>
+          </div>
+
+          <!-- Mode A: Roll + Salt Form -->
           <form id="form-student-login" onsubmit="App.handleStudentLogin(event)" class="space-y-2.5">
             <div>
               <label class="field-label">Institutional Roll Number</label>
@@ -113,6 +121,38 @@
               <span class="spinner hidden"></span>
             </button>
           </form>
+
+          <!-- Mode B: Institutional Email OTP Form -->
+          <div id="form-student-email-otp" class="hidden space-y-2.5">
+            <div>
+              <label class="field-label">Institutional Academic Email</label>
+              <div class="flex gap-2">
+                <input id="input-student-email" type="email" class="field-input font-mono text-xs flex-1" placeholder="e.g. student@krmu.edu.in" autocomplete="off" spellcheck="false">
+                <button type="button" id="btn-send-otp" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3 py-1.5 rounded text-xs font-mono shrink-0 cursor-pointer border border-zinc-700" onclick="App.requestEmailOtp()">
+                  Send OTP
+                </button>
+              </div>
+            </div>
+
+            <div id="section-otp-input" class="hidden space-y-2">
+              <label class="field-label">6-Digit Verification Code</label>
+              <div class="flex gap-2">
+                <input id="input-email-otp" type="text" maxlength="6" class="field-input font-mono text-center tracking-widest text-sm font-bold flex-1" placeholder="------">
+                <button type="button" id="btn-autofill-otp" class="text-[10px] font-mono text-cyan-400 bg-cyan-950/40 border border-cyan-800/60 px-2 py-1 rounded cursor-pointer shrink-0" onclick="App.autofillDemoOtp()">
+                  Auto Demo
+                </button>
+              </div>
+              <button type="button" id="btn-verify-otp" class="btn-primary w-full mt-1 bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold" onclick="App.verifyEmailOtp()">
+                <i data-lucide="shield-check" class="w-4 h-4"></i>
+                <span>Verify &amp; Anchor ZK Ghost</span>
+              </button>
+            </div>
+
+            <div class="p-2 rounded bg-surface border border-border text-[10px] text-zinc-400 space-y-1">
+              <span class="text-emerald-400 font-semibold block">&check; Zero Foreign Keys Architecture:</span>
+              <p>Email is verified in an isolated vault. Public leaderboards and telemetries store ZERO email addresses or student identifiers.</p>
+            </div>
+          </div>
         </div>
 
         <div class="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
@@ -1129,10 +1169,27 @@
         <!-- Side-by-Side Dual Editors -->
         <div class="flex-1 flex overflow-hidden border-b border-zinc-800">
           <!-- Active Student Editor -->
-          <div class="w-1/2 flex flex-col border-r border-zinc-800 bg-[#0C0C0E]">
+          <div class="w-1/2 flex flex-col border-r border-zinc-800 bg-[#0C0C0E] relative overflow-hidden">
             <div class="h-6 bg-zinc-900/60 border-b border-zinc-800/80 px-2 flex items-center justify-between text-[10px] font-mono text-zinc-400">
               <span>You (Active Student Workspace)</span>
-              <span class="text-emerald-500">Protected by AntiCheatGuard</span>
+              <span class="text-emerald-500 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>Protected by AntiCheatGuard</span>
+              </span>
+            </div>
+            <!-- Anti-Cheat Instant Focus Lockout Overlay -->
+            <div id="split-lockout-overlay" class="hidden absolute inset-0 z-30 bg-rose-950/85 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center">
+              <div class="p-3 bg-zinc-950/90 border border-rose-600 rounded-lg text-rose-200 font-mono text-xs space-y-2 max-w-xs shadow-2xl">
+                <div class="flex items-center justify-center gap-1.5 font-bold text-rose-400 uppercase tracking-wide text-[11px]">
+                  <i data-lucide="shield-alert" class="w-4 h-4 text-rose-500 animate-bounce"></i>
+                  <span>Anti-Cheat Focus Lockout</span>
+                </div>
+                <p id="split-lockout-reason" class="text-[11px] text-zinc-300">Window focus lost / tab switch detected.</p>
+                <div class="text-[11px] bg-rose-900/40 border border-rose-800/60 rounded py-1.5 px-3 font-mono">
+                  Editor frozen. Resuming in <strong id="split-lockout-timer" class="text-rose-100 font-bold text-sm">4</strong>s...
+                </div>
+                <p class="text-[9px] text-zinc-500">Strike recorded. 3 strikes result in permanent duel disqualification &amp; -25 ELO.</p>
+              </div>
             </div>
             <textarea id="editor-student" spellcheck="false" autocomplete="off" autocapitalize="off" class="flex-1 w-full bg-transparent text-zinc-200 font-mono text-xs p-3 outline-none resize-none custom-scroll leading-relaxed" placeholder="// Enter your code solution here or click a demo preset..."></textarea>
           </div>

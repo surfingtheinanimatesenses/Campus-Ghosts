@@ -175,6 +175,15 @@ class ReplyFlareRequest(BaseModel):
     nudge_text: str
 
 
+class EmailOtpRequest(BaseModel):
+    email: str
+
+
+class EmailVerifyRequest(BaseModel):
+    email: str
+    otp: str
+
+
 # ---------------------------------------------------------------------------
 # API Routes (/api/v1/*)
 # ---------------------------------------------------------------------------
@@ -365,6 +374,34 @@ def student_login(payload: StudentLoginRequest) -> Dict[str, Any]:
         }
     finally:
         conn.close()
+
+
+@app.post("/api/v1/auth/email/request-otp")
+@app.post("/api/auth/email/request-otp")
+def api_request_email_otp(payload: EmailOtpRequest) -> Dict[str, Any]:
+    """Issues 6-digit cryptographic OTP for student institutional email domain."""
+    from auth_vault import request_institutional_otp
+    res = request_institutional_otp(payload.email)
+    if not res.get("success"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=res.get("error", "Failed to generate OTP"),
+        )
+    return res
+
+
+@app.post("/api/v1/auth/email/verify-otp")
+@app.post("/api/auth/email/verify-otp")
+def api_verify_email_otp(payload: EmailVerifyRequest) -> Dict[str, Any]:
+    """Verifies OTP and issues proof token without linking to ghost profiles."""
+    from auth_vault import verify_institutional_otp
+    res = verify_institutional_otp(payload.email, payload.otp)
+    if not res.get("verified"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=res.get("error", "Verification failed"),
+        )
+    return res
 
 
 @app.post("/api/v1/auth/faculty-login")
@@ -1051,7 +1088,7 @@ async def api_duel_submit(payload: DuelSubmitReq):
     finally:
         conn.close()
 
-    eval_res = await evaluate_code(payload.code, payload.language or "cpp", payload.problem_id or "arr-bound")
+    eval_res = evaluate_code(payload.problem_id or "arr-bound", payload.code, payload.language or "cpp")
     passed = eval_res.get("passed", False)
     concept_tag = eval_res.get("concept_tag", "UNKNOWN")
     severity = "HIGH" if not passed else "LOW"

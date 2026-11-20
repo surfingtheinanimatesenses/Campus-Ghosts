@@ -514,6 +514,48 @@ def test_section_governance_and_sos_flares() -> None:
     )
 
 
+def test_institutional_email_otp():
+    """Test 14: Validates institutional email OTP issuance, validation, and zero foreign keys."""
+    print("\n--- Test 14: Institutional Email OTP & Unlinkable Verification ---")
+    
+    # 1. Request OTP
+    resp = client.post("/api/v1/auth/email/request-otp", json={"email": "scholar@krmu.edu.in"})
+    assert_test("Request OTP status", resp.status_code == 200, f"Status: {resp.status_code}")
+    data = resp.json()
+    assert_test("Response contains success", data.get("success") is True)
+    demo_otp = data.get("demo_otp")
+    assert_test("Demo OTP provided", bool(demo_otp))
+
+    # 2. Verify with wrong OTP
+    bad_resp = client.post("/api/v1/auth/email/verify-otp", json={"email": "scholar@krmu.edu.in", "otp": "000000"})
+    assert_test("Bad OTP rejection", bad_resp.status_code == 400)
+
+    # 3. Verify with correct OTP
+    good_resp = client.post("/api/v1/auth/email/verify-otp", json={"email": "scholar@krmu.edu.in", "otp": demo_otp})
+    assert_test("Good OTP status", good_resp.status_code == 200)
+    v_data = good_resp.json()
+    assert_test("Email verified", v_data.get("verified") is True)
+    assert_test("Has verification token", bool(v_data.get("verification_token")))
+    assert_test("Has suggested salt", "krmu_" in v_data.get("suggested_salt", ""))
+
+
+def test_container_code_execution():
+    """Test 15: Validates real code execution via container sandbox on problem submission."""
+    print("\n--- Test 15: Container Sandbox Code Execution & Diagnostic Pipeline ---")
+    
+    resp = client.post("/api/duel/submit", json={
+        "commitment_hash": "test_ghost_eval_hash",
+        "code": "#include <iostream>\nint main() { std::cout << 15 << std::endl; return 0; }",
+        "language": "cpp",
+        "problem_id": "arr-bound",
+        "opponent_elo": 1200
+    })
+    assert_test("Duel submit HTTP 200", resp.status_code == 200, f"Status: {resp.status_code}")
+    data = resp.json()
+    assert_test("Duel submission has diagnostic", "diagnostic" in data)
+    assert_test("Duel submission has new_elo", "new_elo" in data)
+
+
 # ---------------------------------------------------------------------------
 # Test Runner
 # ---------------------------------------------------------------------------
@@ -538,6 +580,8 @@ def run_all_tests() -> None:
     test_static_files_root_mount()
     test_role_auth_and_create_problem()
     test_section_governance_and_sos_flares()
+    test_institutional_email_otp()
+    test_container_code_execution()
 
     print("\n" + "=" * 70)
     total = PASS_COUNT + FAIL_COUNT

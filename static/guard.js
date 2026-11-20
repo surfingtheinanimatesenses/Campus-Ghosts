@@ -1,44 +1,39 @@
 /**
- * guard.js — AntiCheatGuard Module for CampusGhosts Phase 3
- *
- * Clean Vanilla ES Module with ZERO build tools.
+ * guard.js — Production AntiCheatGuard Module for CampusGhosts
  *
  * Features:
- * 1. Armed State: Tab/fullscreen strikes only count during an active duel (startDuel/stopDuel).
- * 2. Paste & Drop Blocker: Intercepts paste, drag-drop, and Ctrl+V / Cmd+V shortcuts.
- * 3. 3-Strike Tab & Fullscreen Monitor: Debounced at 800ms across blur, visibilitychange, and fullscreenchange.
- * 4. Human vs. Bot Telemetry: Tracks angular cursor direction changes, velocity variance, and keystroke flight-time std dev.
- * 5. Lifecycle Management: destroy() unbinds all listeners to eliminate memory leaks.
+ * 1. Mandatory Fullscreen: Enforces full browser canvas during duels.
+ * 2. Instant Focus-Loss Lockout: Blur, tab switch, or leaving window instantly locks the editor with countdown overlay.
+ * 3. 3-Strike Proctoring: Strikes 1 & 2 trigger timed editor freezes; Strike 3 triggers instant disqualification and ELO deduction.
+ * 4. Paste & Drop Blocker: Intercepts clipboard paste, drag-and-drop, and Ctrl+V / Cmd+V shortcuts.
+ * 5. DevTools & Context Lock: Blocks right-click context menu, F12, Ctrl+Shift+I, and View Source shortcuts.
+ * 6. Keystroke & Mouse Bot Telemetry: Tracks angular velocity variance and flight-time std dev.
  */
 
 export class AntiCheatGuard {
-  /**
-   * @param {Object} options
-   * @param {HTMLElement} options.editorEl - The code editor textarea or element
-   * @param {Function} [options.onStrike] - Called on strikes 1 and 2: (count, reason) => void
-   * @param {Function} [options.onDisqualify] - Called on strike 3: (reason) => void
-   * @param {Function} [options.onTrustUpdate] - Called when trust changes: (score, metrics) => void
-   * @param {Function} [options.onPasteBlocked] - Called when paste/drop is intercepted: (info) => void
-   */
   constructor({
     editorEl,
     onStrike = () => {},
     onDisqualify = () => {},
     onTrustUpdate = () => {},
     onPasteBlocked = () => {},
+    onLockout = () => {},
   }) {
     this.editorEl = editorEl;
     this.onStrike = onStrike;
     this.onDisqualify = onDisqualify;
     this.onTrustUpdate = onTrustUpdate;
     this.onPasteBlocked = onPasteBlocked;
+    this.onLockout = onLockout;
 
     // Armed state & strikes
     this.isArmed = false;
+    this.isLocked = false;
+    this.lockoutTimer = null;
     this.strikes = 0;
     this.maxStrikes = 3;
     this.lastStrikeTime = 0;
-    this.strikeDebounceMs = 800;
+    this.strikeDebounceMs = 900;
 
     // Human vs. Bot Telemetry State
     this.humanTrustScore = 100.0;
@@ -59,7 +54,7 @@ export class AntiCheatGuard {
     this.maxFlightHistory = 25;
     this.totalKeystrokes = 0;
 
-    // Bind event handlers for listener cleanup
+    // Bind event handlers
     this._handlePaste = this._handlePaste.bind(this);
     this._handleDrop = this._handleDrop.bind(this);
     this._handleEditorKeyDown = this._handleEditorKeyDown.bind(this);
@@ -68,47 +63,78 @@ export class AntiCheatGuard {
     this._handleFullscreenChange = this._handleFullscreenChange.bind(this);
     this._handleMouseMove = this._handleMouseMove.bind(this);
     this._handleGlobalKeyDown = this._handleGlobalKeyDown.bind(this);
+    this._handleContextMenu = this._handleContextMenu.bind(this);
 
     this._bindListeners();
   }
 
   // -------------------------------------------------------------------------
-  // Armed State Controls
+  // Armed State & Fullscreen Controls
   // -------------------------------------------------------------------------
-
-  /**
-   * Arm the guard. Tab switches and window blur will now increment strikes.
-   */
-  startDuel() {
+  async startDuel(requireFullscreen = true) {
     this.isArmed = true;
     this.resetStrikes();
+
+    if (requireFullscreen && typeof document !== "undefined" && !document.fullscreenElement) {
+      try {
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        }
+      } catch (err) {
+        console.warn("Fullscreen auto-request rejected or unsupported:", err);
+      }
+    }
   }
 
-  /** Alias for startDuel */
-  arm() {
-    this.startDuel();
-  }
-
-  /**
-   * Disarm the guard. Pauses strike accumulation.
-   */
   stopDuel() {
     this.isArmed = false;
+    this.unlockEditor();
+    if (this.lockoutTimer) {
+      clearInterval(this.lockoutTimer);
+      this.lockoutTimer = null;
+    }
   }
 
-  /** Alias for stopDuel */
-  disarm() {
-    this.stopDuel();
-  }
-
-  /**
-   * Reset strike count for live rehearsals and recalculate trust.
-   */
   resetStrikes() {
     this.strikes = 0;
     this.lastStrikeTime = 0;
     this.blockedPasteAttempts = 0;
+    this.unlockEditor();
     this._recomputeTrustScore();
+  }
+
+  // -------------------------------------------------------------------------
+  // Editor Lockout Overlay Management
+  // -------------------------------------------------------------------------
+  lockEditor(seconds = 4, reason = "Window focus lost") {
+    if (!this.editorEl) return;
+    this.isLocked = true;
+    this.editorEl.setAttribute("readonly", "true");
+    this.editorEl.classList.add("opacity-40", "pointer-events-none", "filter", "blur-[1px]");
+
+    let timeLeft = seconds;
+    this.onLockout(this.strikes, reason, timeLeft);
+
+    if (this.lockoutTimer) clearInterval(this.lockoutTimer);
+    this.lockoutTimer = setInterval(() => {
+      timeLeft -= 1;
+      if (timeLeft <= 0) {
+        clearInterval(this.lockoutTimer);
+        this.lockoutTimer = null;
+        this.unlockEditor();
+        this.onLockout(this.strikes, reason, 0);
+      } else {
+        this.onLockout(this.strikes, reason, timeLeft);
+      }
+    }, 1000);
+  }
+
+  unlockEditor() {
+    this.isLocked = false;
+    if (this.editorEl) {
+      this.editorEl.removeAttribute("readonly");
+      this.editorEl.classList.remove("opacity-40", "pointer-events-none", "filter", "blur-[1px]");
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -119,12 +145,14 @@ export class AntiCheatGuard {
       this.editorEl.addEventListener("paste", this._handlePaste, true);
       this.editorEl.addEventListener("drop", this._handleDrop, true);
       this.editorEl.addEventListener("keydown", this._handleEditorKeyDown, true);
+      this.editorEl.addEventListener("contextmenu", this._handleContextMenu, true);
     }
 
     if (typeof window !== "undefined") {
       window.addEventListener("blur", this._handleWindowBlur);
       window.addEventListener("mousemove", this._handleMouseMove, { passive: true });
-      window.addEventListener("keydown", this._handleGlobalKeyDown, { passive: true });
+      window.addEventListener("keydown", this._handleGlobalKeyDown, true);
+      window.addEventListener("contextmenu", this._handleContextMenu);
     }
 
     if (typeof document !== "undefined") {
@@ -133,9 +161,6 @@ export class AntiCheatGuard {
     }
   }
 
-  /**
-   * Remove all event listeners to eliminate memory leaks.
-   */
   destroy() {
     this.stopDuel();
 
@@ -143,12 +168,14 @@ export class AntiCheatGuard {
       this.editorEl.removeEventListener("paste", this._handlePaste, true);
       this.editorEl.removeEventListener("drop", this._handleDrop, true);
       this.editorEl.removeEventListener("keydown", this._handleEditorKeyDown, true);
+      this.editorEl.removeEventListener("contextmenu", this._handleContextMenu, true);
     }
 
     if (typeof window !== "undefined") {
       window.removeEventListener("blur", this._handleWindowBlur);
       window.removeEventListener("mousemove", this._handleMouseMove);
-      window.removeEventListener("keydown", this._handleGlobalKeyDown);
+      window.removeEventListener("keydown", this._handleGlobalKeyDown, true);
+      window.removeEventListener("contextmenu", this._handleContextMenu);
     }
 
     if (typeof document !== "undefined") {
@@ -160,7 +187,7 @@ export class AntiCheatGuard {
   }
 
   // -------------------------------------------------------------------------
-  // Paste & Drop Protection
+  // Paste, Drop & Shortcut Protection
   // -------------------------------------------------------------------------
   _handlePaste(e) {
     if (e) e.preventDefault();
@@ -172,11 +199,55 @@ export class AntiCheatGuard {
     this._triggerPasteBlocked("drag_drop");
   }
 
+  _handleContextMenu(e) {
+    if (this.isArmed) {
+      if (e) e.preventDefault();
+    }
+  }
+
   _handleEditorKeyDown(e) {
-    // Intercept Ctrl+V or Cmd+V
     if ((e.ctrlKey || e.metaKey) && (e.key === "v" || e.key === "V" || e.code === "KeyV")) {
       e.preventDefault();
       this._triggerPasteBlocked("shortcut_ctrl_v");
+    }
+  }
+
+  _handleGlobalKeyDown(e) {
+    // Block DevTools shortcuts during armed duel
+    if (this.isArmed) {
+      // F12
+      if (e.key === "F12" || e.code === "F12") {
+        e.preventDefault();
+        return;
+      }
+      // Ctrl+Shift+I / J / C (DevTools & Console)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && ["I", "i", "J", "j", "C", "c"].includes(e.key)) {
+        e.preventDefault();
+        return;
+      }
+      // Ctrl+U (View Source)
+      if ((e.ctrlKey || e.metaKey) && ["u", "U"].includes(e.key)) {
+        e.preventDefault();
+        return;
+      }
+    }
+
+    // Keystroke flight time telemetry
+    const now = performance.now();
+    if (this.lastKeyTime > 0) {
+      const flightTime = now - this.lastKeyTime;
+      if (flightTime < 3000) {
+        this.flightTimes.push(flightTime);
+        if (this.flightTimes.length > this.maxFlightHistory) {
+          this.flightTimes.shift();
+        }
+      }
+    }
+    this.lastKeyTime = now;
+    this.totalKeystrokes += 1;
+
+    if (this.totalKeystrokes % 12 === 0) {
+      this._recomputeTrustScore();
     }
   }
 
@@ -191,13 +262,12 @@ export class AntiCheatGuard {
   }
 
   // -------------------------------------------------------------------------
-  // 3-Strike Tab & Fullscreen Monitor (800ms Debounce)
+  // 3-Strike Proctoring & Instant Blur Lockout
   // -------------------------------------------------------------------------
   _registerStrike(reason) {
     if (!this.isArmed) return;
 
     const now = Date.now();
-    // Debounce duplicate blur + visibilitychange events within 800ms
     if (now - this.lastStrikeTime < this.strikeDebounceMs) {
       return;
     }
@@ -206,9 +276,11 @@ export class AntiCheatGuard {
     this.strikes += 1;
 
     if (this.strikes < this.maxStrikes) {
+      this.lockEditor(4, reason);
       this.onStrike(this.strikes, reason);
     } else {
-      this.isArmed = false; // Disarm on strike 3
+      this.isArmed = false;
+      this.unlockEditor();
       this.onDisqualify(reason);
     }
 
@@ -248,20 +320,17 @@ export class AntiCheatGuard {
       const dist = Math.hypot(dx, dy);
 
       if (dist > 1 && dt > 0) {
-        // 1. Velocity Tracking
         const velocity = dist / dt;
         this.velocitySamples.push(velocity);
         if (this.velocitySamples.length > this.maxMouseHistory) {
           this.velocitySamples.shift();
         }
 
-        // 2. Angular Direction Tracking
         const angle = Math.atan2(dy, dx);
         if (this.lastAngle !== null) {
           let diff = Math.abs(angle - this.lastAngle);
           if (diff > Math.PI) diff = 2 * Math.PI - diff;
-          // Angular change threshold (curved human path vs linear bot glide)
-          if (diff > 0.25) {
+          if (diff > 0.45) {
             this.angularDirectionChanges += 1;
           }
         }
@@ -271,119 +340,75 @@ export class AntiCheatGuard {
 
     this.lastMousePos = { x, y };
     this.lastMouseTime = now;
-    this.mouseHistory.push({ x, y, t: now });
-    if (this.mouseHistory.length > this.maxMouseHistory) {
-      this.mouseHistory.shift();
-    }
 
-    // Periodically recompute trust score on mouse movement
-    if (this.mouseHistory.length % 8 === 0) {
+    if (this.velocitySamples.length > 0 && this.velocitySamples.length % 15 === 0) {
       this._recomputeTrustScore();
     }
-  }
-
-  _handleGlobalKeyDown(e) {
-    const now = performance.now();
-    this.totalKeystrokes += 1;
-
-    if (this.lastKeyTime > 0) {
-      const flightTime = now - this.lastKeyTime;
-      // Filter out long idle reading pauses (> 2500ms)
-      if (flightTime < 2500) {
-        this.flightTimes.push(flightTime);
-        if (this.flightTimes.length > this.maxFlightHistory) {
-          this.flightTimes.shift();
-        }
-      }
-    }
-
-    this.lastKeyTime = now;
-
-    // Periodically recompute trust score on typing
-    if (this.totalKeystrokes % 5 === 0) {
-      this._recomputeTrustScore();
-    }
-  }
-
-  // -------------------------------------------------------------------------
-  // Trust Score Computation
-  // -------------------------------------------------------------------------
-  _computeFlightStdDev() {
-    if (this.flightTimes.length < 5) return 40.0; // Assume human prior initially
-    const mean = this.flightTimes.reduce((acc, v) => acc + v, 0) / this.flightTimes.length;
-    const variance =
-      this.flightTimes.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) /
-      this.flightTimes.length;
-    return Math.sqrt(variance);
-  }
-
-  _computeVelocityVariance() {
-    if (this.velocitySamples.length < 5) return 0.2;
-    const mean = this.velocitySamples.reduce((acc, v) => acc + v, 0) / this.velocitySamples.length;
-    const variance =
-      this.velocitySamples.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) /
-      this.velocitySamples.length;
-    return Math.sqrt(variance);
   }
 
   _recomputeTrustScore() {
-    let score = 100.0;
+    let trust = 100.0;
 
-    // 1. Penalty for blocked paste attempts (-18 points each)
-    score -= this.blockedPasteAttempts * 18.0;
+    // Deductions: Paste attempts (-18 per paste)
+    trust -= this.blockedPasteAttempts * 18.0;
 
-    // 2. Penalty for tab/focus strikes (-15 points per strike)
-    score -= this.strikes * 15.0;
+    // Deductions: Focus lost strikes (-22 per strike)
+    trust -= this.strikes * 22.0;
 
-    // 3. Keystroke flight-time analysis (Bot typing check)
-    const stdDev = this._computeFlightStdDev();
-    if (this.flightTimes.length >= 8) {
-      // Bots type with unnatural constant time intervals (std dev < 15ms)
-      if (stdDev < 10.0) {
-        score -= 30.0; // Severe robotic typing penalty
-      } else if (stdDev < 18.0) {
-        score -= 15.0; // Moderate robotic typing penalty
+    // Mouse velocity variance check (linear bot lines vs human curvature)
+    if (this.velocitySamples.length >= 10) {
+      const vMean = this.velocitySamples.reduce((a, b) => a + b, 0) / this.velocitySamples.length;
+      const vVar = this.velocitySamples.reduce((acc, v) => acc + Math.pow(v - vMean, 2), 0) / this.velocitySamples.length;
+      if (vVar < 0.005 && vMean > 0.1) {
+        trust -= 20.0; // Synthetic mouse movement detected
       }
     }
 
-    // 4. Mouse movement check (Headless bot check)
-    const velVariance = this._computeVelocityVariance();
-    if (this.totalKeystrokes > 20 && this.mouseHistory.length < 3) {
-      // Typing extensive code with zero cursor movements
-      score -= 20.0;
-    } else if (this.velocitySamples.length >= 10 && velVariance < 0.02) {
-      // Synthetic linear mouse glide without natural velocity variance
-      score -= 15.0;
+    // Keystroke flight time std dev (uniform intervals indicate script injection)
+    if (this.flightTimes.length >= 8) {
+      const fMean = this.flightTimes.reduce((a, b) => a + b, 0) / this.flightTimes.length;
+      const fVar = this.flightTimes.reduce((acc, f) => acc + Math.pow(f - fMean, 2), 0) / this.flightTimes.length;
+      const fStdDev = Math.sqrt(fVar);
+      if (fStdDev < 6.0) {
+        trust -= 25.0; // Unnatural typing cadence
+      }
     }
 
-    // Clamp score to [0.0, 100.0]
-    this.humanTrustScore = Math.max(0.0, Math.min(100.0, Math.round(score * 10) / 10));
+    this.humanTrustScore = Math.max(0.0, Math.min(100.0, Math.round(trust * 10) / 10));
 
-    const metrics = {
-      humanTrustScore: this.humanTrustScore,
-      strikes: this.strikes,
+    this.onTrustUpdate(this.humanTrustScore, {
       blockedPasteAttempts: this.blockedPasteAttempts,
-      totalKeystrokes: this.totalKeystrokes,
-      flightTimeStdDev: Math.round(stdDev * 10) / 10,
-      velocityVariance: Math.round(velVariance * 1000) / 1000,
-      angularDirectionChanges: this.angularDirectionChanges,
-      mouseMovementsRecorded: this.mouseHistory.length,
-      isArmed: this.isArmed,
-    };
-
-    this.onTrustUpdate(this.humanTrustScore, metrics);
+      strikes: this.strikes,
+      angularChanges: this.angularDirectionChanges,
+      velocityVariance: this._getVelocityVariance(),
+      flightTimeStdDev: this._getFlightTimeStdDev(),
+    });
   }
 
-  /**
-   * Get current live trust score and telemetry metrics.
-   */
+  _getVelocityVariance() {
+    if (this.velocitySamples.length < 2) return 0;
+    const mean = this.velocitySamples.reduce((a, b) => a + b, 0) / this.velocitySamples.length;
+    const variance = this.velocitySamples.reduce((acc, v) => acc + Math.pow(v - mean, 2), 0) / this.velocitySamples.length;
+    return Math.round(variance * 1000) / 1000;
+  }
+
+  _getFlightTimeStdDev() {
+    if (this.flightTimes.length < 2) return 0;
+    const mean = this.flightTimes.reduce((a, b) => a + b, 0) / this.flightTimes.length;
+    const variance = this.flightTimes.reduce((acc, f) => acc + Math.pow(f - mean, 2), 0) / this.flightTimes.length;
+    return Math.round(Math.sqrt(variance) * 10) / 10;
+  }
+
   getMetrics() {
     return {
       humanTrustScore: this.humanTrustScore,
-      strikes: this.strikes,
       blockedPasteAttempts: this.blockedPasteAttempts,
-      totalKeystrokes: this.totalKeystrokes,
+      strikes: this.strikes,
       isArmed: this.isArmed,
+      isLocked: this.isLocked,
+      angularChanges: this.angularDirectionChanges,
+      velocityVariance: this._getVelocityVariance(),
+      flightTimeStdDev: this._getFlightTimeStdDev(),
     };
   }
 }

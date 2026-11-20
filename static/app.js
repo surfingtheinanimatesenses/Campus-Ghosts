@@ -275,6 +275,107 @@ const App = (() => {
     }
   }
 
+  let latestDemoOtp = null;
+
+  function switchStudentAuthMode(mode) {
+    const tabRoll = document.getElementById('tab-auth-roll');
+    const tabEmail = document.getElementById('tab-auth-email');
+    const formRoll = document.getElementById('form-student-login');
+    const formEmail = document.getElementById('form-student-email-otp');
+
+    if (mode === 'roll') {
+      tabRoll?.classList.add('bg-zinc-800', 'text-zinc-100', 'font-semibold');
+      tabRoll?.classList.remove('text-zinc-400');
+      tabEmail?.classList.remove('bg-zinc-800', 'text-zinc-100', 'font-semibold');
+      tabEmail?.classList.add('text-zinc-400');
+      formRoll?.classList.remove('hidden');
+      formEmail?.classList.add('hidden');
+    } else {
+      tabEmail?.classList.add('bg-zinc-800', 'text-zinc-100', 'font-semibold');
+      tabEmail?.classList.remove('text-zinc-400');
+      tabRoll?.classList.remove('bg-zinc-800', 'text-zinc-100', 'font-semibold');
+      tabRoll?.classList.add('text-zinc-400');
+      formRoll?.classList.add('hidden');
+      formEmail?.classList.remove('hidden');
+      const emailInput = document.getElementById('input-student-email');
+      if (emailInput && !emailInput.value) {
+        emailInput.value = 'scholar@krmu.edu.in';
+      }
+    }
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  async function requestEmailOtp() {
+    const emailInput = document.getElementById('input-student-email');
+    const email = (emailInput?.value || '').trim();
+    if (!email || !email.includes('@')) {
+      toast('Please enter a valid institutional email (@krmu.edu.in).', 'warning');
+      return;
+    }
+    const btn = document.getElementById('btn-send-otp');
+    if (btn) btn.textContent = 'Sending...';
+
+    try {
+      const resp = await api('POST', '/auth/email/request-otp', { email });
+      latestDemoOtp = resp.demo_otp;
+      document.getElementById('section-otp-input')?.classList.remove('hidden');
+      toast(`Verification code issued for @${resp.email_domain}. (Demo Code: ${resp.demo_otp})`, 'success');
+      if (btn) btn.textContent = 'Resend';
+    } catch (err) {
+      toast(err.message, 'error');
+      if (btn) btn.textContent = 'Send OTP';
+    }
+  }
+
+  function autofillDemoOtp() {
+    const otpInput = document.getElementById('input-email-otp');
+    if (otpInput && latestDemoOtp) {
+      otpInput.value = latestDemoOtp;
+      toast(`Autofilled demo code: ${latestDemoOtp}`, 'info');
+    } else if (otpInput) {
+      otpInput.value = '250433';
+    }
+  }
+
+  async function verifyEmailOtp() {
+    const emailInput = document.getElementById('input-student-email');
+    const otpInput = document.getElementById('input-email-otp');
+    const email = (emailInput?.value || '').trim();
+    const otp = (otpInput?.value || '').trim();
+
+    if (!email || !otp) {
+      toast('Please enter both institutional email and 6-digit OTP.', 'warning');
+      return;
+    }
+
+    const btn = document.getElementById('btn-verify-otp');
+    if (btn) btn.classList.add('opacity-75', 'pointer-events-none');
+
+    try {
+      const res = await api('POST', '/auth/email/verify-otp', { email, otp });
+      toast(`Verified! Derived anonymous salt: ${res.suggested_salt}`, 'success');
+
+      const resp = await api('POST', '/auth/student-login', {
+        roll_number: '2601010043',
+        secret_salt: res.suggested_salt,
+        section: 'CSE-1C',
+      });
+
+      session = {
+        role: 'student',
+        token: resp.session_token,
+        user: resp,
+      };
+      localStorage.setItem('campusghosts_session', JSON.stringify(session));
+      mountStudentWorkspace(resp);
+      toast(`Zero-Knowledge Identity Anchored: ${resp.alias} (Rank #${resp.rank})`, 'success');
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      if (btn) btn.classList.remove('opacity-75', 'pointer-events-none');
+    }
+  }
+
   function quickFillStudent() {
     const roll = document.getElementById('input-student-roll');
     const salt = document.getElementById('input-student-salt');
@@ -1706,6 +1807,10 @@ Keep your private salt confidential. Only reveal during placement audits.`;
     init,
     handleStudentLogin,
     handleFacultyLogin,
+    switchStudentAuthMode,
+    requestEmailOtp,
+    autofillDemoOtp,
+    verifyEmailOtp,
     launchOpenPracticeArena,
     launchSplitDuelArena,
     showHomePortal,

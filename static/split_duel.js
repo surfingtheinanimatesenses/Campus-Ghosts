@@ -68,7 +68,22 @@ function initGuardAndReplay() {
         if (strikesEl) strikesEl.textContent = `${count}/3`;
         showToast(`Warning Strike ${count}/3: ${reason}`, "warning");
       },
+      onLockout: (count, reason, timeLeft) => {
+        const overlay = document.getElementById("split-lockout-overlay");
+        const reasonEl = document.getElementById("split-lockout-reason");
+        const timerEl = document.getElementById("split-lockout-timer");
+        if (!overlay) return;
+        if (timeLeft > 0) {
+          overlay.classList.remove("hidden");
+          if (reasonEl) reasonEl.textContent = `${reason} (Strike ${count}/3)`;
+          if (timerEl) timerEl.textContent = String(timeLeft);
+        } else {
+          overlay.classList.add("hidden");
+        }
+      },
       onDisqualify: async (reason) => {
+        const overlay = document.getElementById("split-lockout-overlay");
+        if (overlay) overlay.classList.add("hidden");
         const strikesEl = document.getElementById("pill-strikes");
         if (strikesEl) {
           strikesEl.textContent = "3/3 (DISQUALIFIED)";

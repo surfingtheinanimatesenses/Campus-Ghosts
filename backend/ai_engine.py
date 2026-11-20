@@ -614,23 +614,33 @@ Respond ONLY with a JSON object (no markdown fences, no extra text):
 """
 
 
-def evaluate_code(problem_id: str, code: str) -> dict:
+def evaluate_code(*args, **kwargs) -> dict:
     """
-    Analyse student code against a problem using pooled LLM or offline fallback.
-    Returns:
-      passed: bool
-      concept_tag: str
-      topic: str
-      socratic_hint: str
-      runtime_ms: float
-      memory_kb: int
-      time_complexity: str
-      space_complexity: str
-      optimization_score: int
-      beats_percent: int
-      optimization_note: str
-      is_valid_attempt: bool
+    Analyse student code against a problem using live container sandbox (Wandbox/Judge0),
+    pooled LLM, or offline AST fallback.
+    Polymorphic: supports evaluate_code(problem_id, code) and evaluate_code(code, lang, problem_id).
     """
+    language = kwargs.get("language")
+    problem_id = kwargs.get("problem_id")
+    code = kwargs.get("code")
+
+    if len(args) == 1:
+        code = args[0]
+    elif len(args) == 2:
+        if args[0] in PROBLEMS or (len(str(args[0])) < 35 and "\n" not in str(args[0])):
+            problem_id, code = args[0], args[1]
+        else:
+            code, problem_id = args[0], args[1]
+    elif len(args) >= 3:
+        if args[0] in PROBLEMS or (len(str(args[0])) < 35 and "\n" not in str(args[0])):
+            problem_id, code, language = args[0], args[1], args[2]
+        else:
+            code, language, problem_id = args[0], args[1], args[2]
+
+    problem_id = str(problem_id or "arr-bound").strip()
+    code = str(code or "").strip()
+    language = str(language or "cpp").strip()
+
     # Guard: gibberish / empty code
     if not _is_valid_attempt(code):
         return dict(_INCOMPLETE_RESPONSE)
@@ -649,7 +659,35 @@ def evaluate_code(problem_id: str, code: str) -> dict:
             **perf,
         }
 
-    # Build LLM prompt
+    # 1. Live Container Sandbox Execution (Wandbox / Judge0)
+    try:
+        from execution_engine import run_problem_sandbox
+        sandbox_res = run_problem_sandbox(code, language or problem.get("language", "cpp"), problem)
+        if sandbox_res and sandbox_res.get("is_sandbox"):
+            perf = _inspect_code_performance(code, problem_id, sandbox_res.get("passed", False))
+            return {
+                "passed": sandbox_res["passed"],
+                "status": sandbox_res.get("status", "Evaluated"),
+                "concept_tag": sandbox_res["concept_tag"],
+                "topic": problem.get("topic", "General"),
+                "socratic_hint": sandbox_res["socratic_hint"],
+                "socratic_guidance": sandbox_res["socratic_hint"],
+                "runtime_ms": sandbox_res["runtime_ms"],
+                "memory_kb": sandbox_res["memory_kb"],
+                "time_complexity": perf.get("time_complexity", "O(1)"),
+                "space_complexity": perf.get("space_complexity", "O(1)"),
+                "optimization_score": perf.get("optimization_score", 90 if sandbox_res["passed"] else 0),
+                "beats_percent": perf.get("beats_percent", 88 if sandbox_res["passed"] else 0),
+                "optimization_note": perf.get("optimization_note", "Container-isolated execution verified."),
+                "is_valid_attempt": True,
+                "source": sandbox_res.get("source", "sandbox"),
+                "stdout": sandbox_res.get("stdout", ""),
+                "compiler_error": sandbox_res.get("compiler_error", ""),
+            }
+    except Exception as e:
+        logger.warning("Container sandbox execution error: %s", e)
+
+    # 2. Build LLM prompt (Fallback if sandbox unreachable)
     prompt = _ANALYSIS_PROMPT_TEMPLATE.format(
         title=problem["title"],
         language=problem["language"],
