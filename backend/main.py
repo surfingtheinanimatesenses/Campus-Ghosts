@@ -132,6 +132,7 @@ class SubmitCodeRequest(BaseModel):
     section: Optional[str] = "CSE-1C"
     language: Optional[str] = None
     won_duel: Optional[bool] = False
+    human_trust_score: Optional[float] = None
 
 
 class RemedialPlanRequest(BaseModel):
@@ -362,6 +363,7 @@ def student_login(payload: StudentLoginRequest) -> Dict[str, Any]:
         return {
             "role": "student",
             "session_token": session_token,
+            "roll_number": commitment["roll_number"],
             "ghost_hash": ghost_hash,
             "alias": alias,
             "section": section,
@@ -552,6 +554,7 @@ def submit_code(payload: SubmitCodeRequest) -> Dict[str, Any]:
 
     # Determine ghost_hash
     ghost_hash = None
+    is_guest = False
     if payload.roll_number and payload.secret_salt:
         try:
             commitment = generate_ghost_commitment(payload.roll_number, payload.secret_salt)
@@ -560,12 +563,31 @@ def submit_code(payload: SubmitCodeRequest) -> Dict[str, Any]:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(err))
     elif payload.ghost_hash:
         ghost_hash = payload.ghost_hash.strip()
+        if "guest" in ghost_hash.lower():
+            is_guest = True
 
     if not ghost_hash:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Must provide either (roll_number, secret_salt) or ghost_hash.",
         )
+
+    # Special guest sandbox execution mode (allows open practice without pre-existing DB ghost profile)
+    if is_guest:
+        prob_info = PROBLEMS.get(payload.problem_id, {})
+        lang = payload.language or prob_info.get("language", "cpp")
+        diagnostic = evaluate_code(payload.problem_id, payload.code, lang)
+        is_valid = diagnostic.get("is_valid_attempt", True)
+        passed = diagnostic.get("passed") is True
+        return {
+            "diagnostic": diagnostic,
+            "rating": 1200,
+            "elo": 1200,
+            "rating_delta": 25 if passed else -5,
+            "streak": 1 if passed else 0,
+            "solved_count": 1 if passed else 0,
+            "is_valid_attempt": is_valid,
+        }
 
     conn = get_db_connection()
     try:
@@ -586,8 +608,19 @@ def submit_code(payload: SubmitCodeRequest) -> Dict[str, Any]:
             )
         profile = dict(row)
 
+        prob_info = PROBLEMS.get(payload.problem_id)
+        if not prob_info:
+            cursor.execute("SELECT * FROM problems WHERE id = ?;", (payload.problem_id,))
+            p_row = cursor.fetchone()
+            if p_row:
+                prob_info = dict(p_row)
+                PROBLEMS[payload.problem_id] = prob_info
+            else:
+                prob_info = {}
+        language = payload.language or prob_info.get("language", "cpp")
+
         # Run AI Diagnostic Engine
-        diagnostic = evaluate_code(payload.problem_id, payload.code)
+        diagnostic = evaluate_code(payload.problem_id, payload.code, language)
         is_valid = diagnostic.get("is_valid_attempt", True)
         passed = diagnostic.get("passed") is True
 
@@ -599,16 +632,6 @@ def submit_code(payload: SubmitCodeRequest) -> Dict[str, Any]:
         # Only log telemetry and update stats if this is a genuine code attempt
         if is_valid:
             passed_val = 1 if passed else 0
-            prob_info = PROBLEMS.get(payload.problem_id)
-            if not prob_info:
-                cursor.execute("SELECT * FROM problems WHERE id = ?;", (payload.problem_id,))
-                p_row = cursor.fetchone()
-                if p_row:
-                    prob_info = dict(p_row)
-                    PROBLEMS[payload.problem_id] = prob_info
-                else:
-                    prob_info = {}
-            language = payload.language or prob_info.get("language", "unknown")
             topic = diagnostic.get("topic") or prob_info.get("topic", "General")
             concept_tag = diagnostic.get("concept_tag") or prob_info.get("concept_tag", "UNKNOWN")
             problem_rating = int(prob_info.get("problem_rating", 1250))
@@ -650,14 +673,24 @@ def submit_code(payload: SubmitCodeRequest) -> Dict[str, Any]:
                         timestamp,
                     ),
                 )
-                conn.execute(
-                    """
-                    UPDATE ghost_profiles
-                    SET rating = ?, streak = ?, solved_count = ?
-                    WHERE ghost_hash = ?;
-                    """,
-                    (new_rating, new_streak, new_solved, ghost_hash),
-                )
+                if payload.human_trust_score is not None:
+                    conn.execute(
+                        """
+                        UPDATE ghost_profiles
+                        SET rating = ?, streak = ?, solved_count = ?, human_trust_score = ?
+                        WHERE ghost_hash = ?;
+                        """,
+                        (new_rating, new_streak, new_solved, payload.human_trust_score, ghost_hash),
+                    )
+                else:
+                    conn.execute(
+                        """
+                        UPDATE ghost_profiles
+                        SET rating = ?, streak = ?, solved_count = ?
+                        WHERE ghost_hash = ?;
+                        """,
+                        (new_rating, new_streak, new_solved, ghost_hash),
+                    )
 
         return {
             "diagnostic": diagnostic,
@@ -683,7 +716,7 @@ def get_leaderboard(section: str = Query("CSE-1C")) -> Dict[str, Any]:
         cursor = conn.cursor()
         cursor.execute(
             """
-            SELECT alias, section, rating, streak, solved_count
+            SELECT alias, section, rating, streak, solved_count, COALESCE(human_trust_score, 100.0) AS human_trust_score
             FROM ghost_profiles
             WHERE section = ?
             ORDER BY rating DESC, solved_count DESC, streak DESC
@@ -703,6 +736,7 @@ def get_leaderboard(section: str = Query("CSE-1C")) -> Dict[str, Any]:
                     "elo": row["rating"],
                     "streak": row["streak"],
                     "solved_count": row["solved_count"],
+                    "human_trust_score": round(float(row["human_trust_score"]), 1),
                 }
             )
         return {"section": section, "leaderboard": leaderboard}
@@ -1018,7 +1052,7 @@ def reply_sos_flare(payload: ReplyFlareRequest) -> Dict[str, Any]:
             )
             # Award +8 Mentor Rating to helper
             cursor.execute(
-                "UPDATE ghost_profiles SET rating = rating + 8 WHERE alias = ?;",
+                "UPDATE ghost_profiles SET rating = rating + 8 WHERE LOWER(alias) = LOWER(?);",
                 (payload.helper_alias.strip(),),
             )
 
@@ -1095,13 +1129,14 @@ async def api_duel_submit(payload: DuelSubmitReq):
     runtime_ms = eval_res.get("runtime_ms", 12.0)
     memory_kb = eval_res.get("memory_kb", 2048)
 
-    delta = calculate_rating_change(current_elo, payload.opponent_elo or 1200, passed, eval_res.get("optimization_score", 70))
+    delta = calculate_rating_change(current_elo, payload.opponent_elo or 1200, passed, eval_res.get("optimization_score", 70), won_duel=passed)
     new_elo = max(800, current_elo + delta)
+    trust_score = payload.human_trust_score if payload.human_trust_score is not None else 100.0
 
     conn = get_db_connection()
     try:
         with conn:
-            conn.execute("UPDATE ghost_profiles SET rating = ? WHERE ghost_hash = ?;", (new_elo, payload.commitment_hash))
+            conn.execute("UPDATE ghost_profiles SET rating = ?, human_trust_score = ? WHERE ghost_hash = ?;", (new_elo, trust_score, payload.commitment_hash))
             now_iso = datetime.now(timezone.utc).isoformat()
             conn.execute(
                 "INSERT INTO telemetry_events (ghost_hash, section, language, problem_id, topic, concept_tag, passed, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?);",
@@ -1153,45 +1188,82 @@ def api_duel_penalty(payload: PenaltyReq):
 def api_faculty_telemetry(mode: str = Query("safe")):
     k_thresh = 5 if mode == "safe" else 1
     raw_mode = (mode == "raw")
-    clusters_dict = get_k_anonymous_telemetry(section="CSE-1C", k_threshold=k_thresh, raw_audit_mode=raw_mode)
+    telemetry_data = get_k_anonymous_telemetry(section="CSE-1C", k_threshold=k_thresh, raw_audit_mode=raw_mode)
+    raw_clusters = telemetry_data.get("clusters", [])
     clusters = []
-    for tag, meta in clusters_dict.items():
+    for c in raw_clusters:
+        is_masked = c.get("status") == "MASKED_BY_K_ANONYMITY"
         clusters.append({
-            "concept_tag": tag,
-            "count": meta["count"] if not meta["is_masked"] else None,
-            "masked": meta["is_masked"],
-            "label": f"MASKED (k < 5)" if meta["is_masked"] else str(meta["count"]),
+            "concept_tag": c.get("concept_tag"),
+            "count": c.get("student_count"),
+            "masked": is_masked,
+            "label": c.get("display_count", "MASKED (k < 5)"),
         })
     return {"mode": mode, "clusters": clusters}
 
 class RemedialReq(BaseModel):
     concept_tag: str
+    topic: Optional[str] = "Systems Programming"
     ghost_count: Optional[int] = 1
 
 @app.post("/api/faculty/remedial")
-async def api_faculty_remedial(payload: RemedialReq):
-    plan = await generate_remedial_plan(payload.concept_tag, "CSE-1C", payload.ghost_count or 1)
+def api_faculty_remedial(payload: RemedialReq):
+    topic = payload.topic
+    tag = (payload.concept_tag or "").upper()
+    if not topic or topic == "Systems Programming":
+        if "ARRAY" in tag or "BOUND" in tag or "LOOP" in tag:
+            topic = "Loops & Iteration"
+        elif "POINTER" in tag or "DEREF" in tag:
+            topic = "Pointers & Memory"
+        elif "REC" in tag or "BASE_CASE" in tag:
+            topic = "Recursion"
+        elif "SHIFT" in tag or "BIT" in tag:
+            topic = "Bit Manipulation"
+        elif "VALUE" in tag or "SCOPE" in tag or "MUTATION" in tag:
+            topic = "Functions & Scope"
+        else:
+            topic = "Systems Programming"
+
+    plan = generate_remedial_plan(topic, payload.concept_tag, payload.ghost_count or 1)
     slides = []
-    for idx, s in enumerate(plan.get("slides", [])):
-        slides.append({
-            "slide_num": idx + 1,
-            "slide": idx + 1,
-            "heading": s.get("title", s.get("heading", f"Slide {idx+1}")),
-            "content": s.get("bullet_points", [s.get("body", "")])[0] if isinstance(s.get("bullet_points"), list) and s.get("bullet_points") else s.get("body", ""),
-            "body": s.get("bullet_points", [s.get("body", "")])[0] if isinstance(s.get("bullet_points"), list) and s.get("bullet_points") else s.get("body", ""),
-        })
+    # If returned plan has slides format or standard fields
+    if "slides" in plan and isinstance(plan["slides"], list):
+        for idx, s in enumerate(plan["slides"]):
+            slides.append({
+                "slide_num": idx + 1,
+                "slide": idx + 1,
+                "heading": s.get("title", s.get("heading", f"Slide {idx+1}")),
+                "content": s.get("bullet_points", [s.get("body", "")])[0] if isinstance(s.get("bullet_points"), list) and s.get("bullet_points") else s.get("body", ""),
+                "body": s.get("bullet_points", [s.get("body", "")])[0] if isinstance(s.get("bullet_points"), list) and s.get("bullet_points") else s.get("body", ""),
+            })
+    else:
+        # Standard format from ai_engine.generate_remedial_plan
+        slides = [
+            {"slide_num": 1, "slide": 1, "heading": plan.get("title", "Overview"), "content": plan.get("root_cause_summary", ""), "body": plan.get("root_cause_summary", "")},
+            {"slide_num": 2, "slide": 2, "heading": "Live Code Fix", "content": plan.get("live_code_demo_fix", ""), "body": plan.get("live_code_demo_fix", "")},
+            {"slide_num": 3, "slide": 3, "heading": "Practice Drill", "content": plan.get("practice_drill", ""), "body": plan.get("practice_drill", "")},
+        ]
     viva = []
-    for v in plan.get("viva_questions", []):
-        viva.append({
-            "question": v.get("q", v.get("question", "")),
-            "answer": v.get("a", v.get("answer", "")),
-            "q": v.get("q", v.get("question", "")),
-            "a": v.get("a", v.get("answer", "")),
-        })
+    viva_list = plan.get("three_viva_questions") or plan.get("viva_questions") or []
+    for item in viva_list:
+        if isinstance(item, dict):
+            viva.append({
+                "question": item.get("question", item.get("q", "")),
+                "answer": item.get("answer", item.get("a", "")),
+                "q": item.get("q", item.get("question", "")),
+                "a": item.get("a", item.get("answer", "")),
+            })
+        else:
+            viva.append({
+                "question": str(item),
+                "answer": "Formulate invariant-based reasoning.",
+                "q": str(item),
+                "a": "Formulate invariant-based reasoning.",
+            })
     return {
         "concept_tag": payload.concept_tag,
         "affected_ghost_count": payload.ghost_count or 1,
-        "title": plan.get("topic_title", f"Remedial Lecture: {payload.concept_tag}"),
+        "title": plan.get("title", f"Remedial Lecture: {payload.concept_tag}"),
         "slides": slides,
         "viva_questions": viva,
         "source": plan.get("source", "offline_fallback"),
@@ -1200,17 +1272,27 @@ async def api_faculty_remedial(payload: RemedialReq):
 class ClaimReq(BaseModel):
     roll_no: str
     secret_salt: str
+    claimed_alias: Optional[str] = None
 
 @app.post("/api/claim/verify")
 def api_claim_verify(payload: ClaimReq):
-    res = verify_placement_claim(payload.roll_no, payload.secret_salt)
+    claimed_alias = payload.claimed_alias
+    if not claimed_alias:
+        # Compute commitment to deduce alias if not provided
+        try:
+            comm = generate_ghost_commitment(payload.roll_no, payload.secret_salt)
+            claimed_alias = comm["alias"]
+        except Exception:
+            claimed_alias = ""
+    res = verify_placement_claim(payload.roll_no, payload.secret_salt, claimed_alias)
+    prof = res.get("profile") or {}
     return {
         "verified": res.get("verified", False),
-        "alias": res.get("alias", ""),
-        "elo_rating": res.get("rating", 1200),
-        "rank": res.get("percentile", 1),
-        "signed_proof_hash": res.get("proof_hash", ""),
-        "detail": res.get("detail", ""),
+        "alias": prof.get("alias", claimed_alias),
+        "elo_rating": prof.get("rating", 1200),
+        "rank": 1,
+        "signed_proof_hash": prof.get("ghost_hash", ""),
+        "detail": res.get("message", ""),
     }
 
 @app.get("/api/leaderboard")
@@ -1218,10 +1300,10 @@ def api_leaderboard():
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT alias, rating FROM ghost_profiles ORDER BY rating DESC LIMIT 10;")
+        cursor.execute("SELECT alias, rating, COALESCE(human_trust_score, 100.0) AS trust FROM ghost_profiles ORDER BY rating DESC LIMIT 10;")
         rows = cursor.fetchall()
         board = [
-            {"rank": i + 1, "alias": r["alias"], "elo_rating": r["rating"], "human_trust_score": 100.0}
+            {"rank": i + 1, "alias": r["alias"], "elo_rating": r["rating"], "human_trust_score": round(float(r["trust"]), 1)}
             for i, r in enumerate(rows)
         ]
         return {"leaderboard": board}
@@ -1234,9 +1316,28 @@ def api_debug_schema_inspect():
     try:
         cursor = conn.cursor()
         cursor.execute("SELECT roll_number, registered_at FROM enrolled_roll_registry LIMIT 5;")
-        students = [dict(r) for r in cursor.fetchall()]
+        raw_students = cursor.fetchall()
+        students = [
+            {
+                "roll_number": r["roll_number"],
+                "roll_no": r["roll_number"],
+                "registered_at": r["registered_at"],
+                "verified_at": r["registered_at"],
+            }
+            for r in raw_students
+        ]
         cursor.execute("SELECT ghost_hash, alias, rating FROM ghost_profiles LIMIT 5;")
-        ghosts = [dict(r) for r in cursor.fetchall()]
+        raw_ghosts = cursor.fetchall()
+        ghosts = [
+            {
+                "ghost_hash": r["ghost_hash"],
+                "commitment_hash": r["ghost_hash"],
+                "alias": r["alias"],
+                "rating": r["rating"],
+                "elo_rating": r["rating"],
+            }
+            for r in raw_ghosts
+        ]
         schemas = {}
         for t in ("enrolled_roll_registry", "ghost_profiles", "telemetry_events", "problems"):
             cursor.execute(f"PRAGMA table_info({t});")

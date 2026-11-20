@@ -5,10 +5,14 @@ Tests both LLM-parsing helpers and the full offline fallback paths.
 Requires ZERO live API calls — all tests run deterministically in <500 ms.
 """
 
+import os
 import sys
 import json
 import time
 from pathlib import Path
+
+# Disable live network sandbox for offline ai_engine unit testing
+os.environ["CAMPUSGHOSTS_DISABLE_SANDBOX"] = "1"
 
 # Ensure backend module is importable regardless of CWD
 sys.path.insert(0, str(Path(__file__).resolve().parent))

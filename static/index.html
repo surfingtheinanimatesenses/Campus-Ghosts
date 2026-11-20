@@ -519,6 +519,7 @@
               <div class="flex items-center gap-2">
                 <span id="editor-lang-badge" class="lang-badge">C++</span>
                 <span class="text-[11px] text-text-muted font-mono" id="editor-char-counter">0 chars</span>
+                <span id="student-trust-badge" class="text-[10px] font-mono text-emerald">100.0% Trust</span>
               </div>
               <div class="flex items-center gap-1.5">
                 <button class="btn-ghost text-xs" onclick="App.loadBuggyCode()">
@@ -532,6 +533,21 @@
 
             <!-- Code Editor Body with Line Numbers (Strictly aligned 44px gutter with 24px line-height) -->
             <div class="flex-1 overflow-hidden relative">
+              <!-- Anti-Cheat Instant Focus Lockout Overlay -->
+              <div id="student-lockout-overlay" class="hidden absolute inset-0 z-30 bg-rose-950/85 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center">
+                <div class="p-3 bg-zinc-950/90 border border-rose-600 rounded-lg text-rose-200 font-mono text-xs space-y-2 max-w-xs shadow-2xl">
+                  <div class="flex items-center justify-center gap-1.5 font-bold text-rose-400 uppercase tracking-wide text-[11px]">
+                    <i data-lucide="shield-alert" class="w-4 h-4 text-rose-500 animate-bounce"></i>
+                    <span>Anti-Cheat Focus Lockout</span>
+                  </div>
+                  <p id="student-lockout-reason" class="text-[11px] text-zinc-300">Window focus lost / tab switch detected.</p>
+                  <div class="text-[11px] bg-rose-900/40 border border-rose-800/60 rounded py-1.5 px-3 font-mono">
+                    Editor frozen. Resuming in <strong id="student-lockout-timer" class="text-rose-100 font-bold text-sm">4</strong>s...
+                  </div>
+                  <p class="text-[9px] text-zinc-500">Strike recorded. 3 strikes result in permanent duel disqualification.</p>
+                </div>
+              </div>
+
               <div class="code-editor-wrap">
                 <div id="line-numbers" class="line-numbers" aria-hidden="true">1</div>
                 <textarea id="code-editor" class="code-editor" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="// Write or inspect your code solution here..."></textarea>
@@ -1408,6 +1424,7 @@
   <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
 
   <!-- Application Logic -->
+  <script type="module" src="guard.js"></script>
   <script src="app.js"></script>
   <script type="module" src="split_duel.js"></script>
 </body>

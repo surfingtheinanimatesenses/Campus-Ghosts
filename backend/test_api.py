@@ -548,12 +548,47 @@ def test_container_code_execution():
         "code": "#include <iostream>\nint main() { std::cout << 15 << std::endl; return 0; }",
         "language": "cpp",
         "problem_id": "arr-bound",
-        "opponent_elo": 1200
+        "opponent_elo": 1200,
+        "human_trust_score": 92.5,
     })
     assert_test("Duel submit HTTP 200", resp.status_code == 200, f"Status: {resp.status_code}")
     data = resp.json()
     assert_test("Duel submission has diagnostic", "diagnostic" in data)
     assert_test("Duel submission has new_elo", "new_elo" in data)
+    assert_test("Duel submission preserves trust score", data.get("human_trust_score") == 92.5)
+
+
+def test_schema_inspect_and_compat_fields():
+    """Test 16: Validates schema inspect field mappings and compat routes."""
+    print("\n--- Test 16: Schema Inspect & Dual-Schema Compatibility ---")
+
+    # 1. Schema Inspect Endpoint
+    resp = client.get("/api/debug/schema-inspect")
+    assert_test("Schema inspect returns 200", resp.status_code == 200)
+    data = resp.json()
+
+    students = data.get("verified_students_sample", [])
+    assert_test("Verified students sample present", len(students) > 0)
+    assert_test("Student has roll_no AND roll_number", "roll_no" in students[0] and "roll_number" in students[0])
+    assert_test("Student has verified_at AND registered_at", "verified_at" in students[0] and "registered_at" in students[0])
+
+    ghosts = data.get("ghost_profiles_sample", [])
+    assert_test("Ghost profiles sample present", len(ghosts) > 0)
+    assert_test("Ghost has commitment_hash AND ghost_hash", "commitment_hash" in ghosts[0] and "ghost_hash" in ghosts[0])
+    assert_test("Ghost has elo_rating AND rating", "elo_rating" in ghosts[0] and "rating" in ghosts[0])
+
+    # 2. Leaderboard Trust Score
+    lead_resp = client.get("/api/leaderboard")
+    assert_test("Compat leaderboard returns 200", lead_resp.status_code == 200)
+    lead_data = lead_resp.json()
+    assert_test("Compat leaderboard has human_trust_score", "human_trust_score" in lead_data["leaderboard"][0])
+
+    # 3. Remedial Plan Topic Auto-Inference
+    rem_resp = client.post("/api/faculty/remedial", json={"concept_tag": "ARRAY_OUT_OF_BOUNDS", "ghost_count": 5})
+    assert_test("Compat remedial returns 200", rem_resp.status_code == 200)
+    rem_data = rem_resp.json()
+    assert_test("Remedial plan has slides", len(rem_data.get("slides", [])) > 0)
+    assert_test("Remedial plan has viva questions", len(rem_data.get("viva_questions", [])) > 0)
 
 
 # ---------------------------------------------------------------------------
@@ -582,6 +617,7 @@ def run_all_tests() -> None:
     test_section_governance_and_sos_flares()
     test_institutional_email_otp()
     test_container_code_execution()
+    test_schema_inspect_and_compat_fields()
 
     print("\n" + "=" * 70)
     total = PASS_COUNT + FAIL_COUNT

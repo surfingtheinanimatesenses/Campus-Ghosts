@@ -659,33 +659,38 @@ def evaluate_code(*args, **kwargs) -> dict:
             **perf,
         }
 
+    if not language and problem:
+        language = problem.get("language", "cpp")
+    language = str(language or "cpp").strip().lower()
+
     # 1. Live Container Sandbox Execution (Wandbox / Judge0)
-    try:
-        from execution_engine import run_problem_sandbox
-        sandbox_res = run_problem_sandbox(code, language or problem.get("language", "cpp"), problem)
-        if sandbox_res and sandbox_res.get("is_sandbox"):
-            perf = _inspect_code_performance(code, problem_id, sandbox_res.get("passed", False))
-            return {
-                "passed": sandbox_res["passed"],
-                "status": sandbox_res.get("status", "Evaluated"),
-                "concept_tag": sandbox_res["concept_tag"],
-                "topic": problem.get("topic", "General"),
-                "socratic_hint": sandbox_res["socratic_hint"],
-                "socratic_guidance": sandbox_res["socratic_hint"],
-                "runtime_ms": sandbox_res["runtime_ms"],
-                "memory_kb": sandbox_res["memory_kb"],
-                "time_complexity": perf.get("time_complexity", "O(1)"),
-                "space_complexity": perf.get("space_complexity", "O(1)"),
-                "optimization_score": perf.get("optimization_score", 90 if sandbox_res["passed"] else 0),
-                "beats_percent": perf.get("beats_percent", 88 if sandbox_res["passed"] else 0),
-                "optimization_note": perf.get("optimization_note", "Container-isolated execution verified."),
-                "is_valid_attempt": True,
-                "source": sandbox_res.get("source", "sandbox"),
-                "stdout": sandbox_res.get("stdout", ""),
-                "compiler_error": sandbox_res.get("compiler_error", ""),
-            }
-    except Exception as e:
-        logger.warning("Container sandbox execution error: %s", e)
+    if os.getenv("CAMPUSGHOSTS_DISABLE_SANDBOX", "0") != "1" and kwargs.get("use_sandbox", True):
+        try:
+            from execution_engine import run_problem_sandbox
+            sandbox_res = run_problem_sandbox(code, language or problem.get("language", "cpp"), problem)
+            if sandbox_res and sandbox_res.get("is_sandbox"):
+                perf = _inspect_code_performance(code, problem_id, sandbox_res.get("passed", False))
+                return {
+                    "passed": sandbox_res["passed"],
+                    "status": sandbox_res.get("status", "Evaluated"),
+                    "concept_tag": sandbox_res["concept_tag"],
+                    "topic": problem.get("topic", "General"),
+                    "socratic_hint": sandbox_res["socratic_hint"],
+                    "socratic_guidance": sandbox_res["socratic_hint"],
+                    "runtime_ms": sandbox_res["runtime_ms"],
+                    "memory_kb": sandbox_res["memory_kb"],
+                    "time_complexity": perf.get("time_complexity", "O(1)"),
+                    "space_complexity": perf.get("space_complexity", "O(1)"),
+                    "optimization_score": perf.get("optimization_score", 90 if sandbox_res["passed"] else 0),
+                    "beats_percent": perf.get("beats_percent", 88 if sandbox_res["passed"] else 0),
+                    "optimization_note": perf.get("optimization_note", "Container-isolated execution verified."),
+                    "is_valid_attempt": True,
+                    "source": sandbox_res.get("source", "sandbox"),
+                    "stdout": sandbox_res.get("stdout", ""),
+                    "compiler_error": sandbox_res.get("compiler_error", ""),
+                }
+        except Exception as e:
+            logger.warning("Container sandbox execution error: %s", e)
 
     # 2. Build LLM prompt (Fallback if sandbox unreachable)
     prompt = _ANALYSIS_PROMPT_TEMPLATE.format(

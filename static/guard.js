@@ -39,13 +39,17 @@ export class AntiCheatGuard {
     this.humanTrustScore = 100.0;
     this.blockedPasteAttempts = 0;
 
-    // Mouse movement metrics
+    // Mouse movement, acceleration & deceleration metrics
     this.mouseHistory = [];
     this.maxMouseHistory = 40;
     this.lastMousePos = null;
     this.lastMouseTime = 0;
+    this.lastVelocity = 0;
     this.angularDirectionChanges = 0;
     this.velocitySamples = [];
+    this.accelerationSamples = [];
+    this.decelerationSamples = [];
+    this.maxAccelDecelHistory = 35;
     this.lastAngle = null;
 
     // Keystroke flight time metrics
@@ -326,6 +330,23 @@ export class AntiCheatGuard {
           this.velocitySamples.shift();
         }
 
+        // Mouse acceleration & deceleration tracking
+        if (this.lastVelocity > 0) {
+          const accel = (velocity - this.lastVelocity) / dt;
+          if (accel > 0.0001) {
+            this.accelerationSamples.push(accel);
+            if (this.accelerationSamples.length > this.maxAccelDecelHistory) {
+              this.accelerationSamples.shift();
+            }
+          } else if (accel < -0.0001) {
+            this.decelerationSamples.push(Math.abs(accel));
+            if (this.decelerationSamples.length > this.maxAccelDecelHistory) {
+              this.decelerationSamples.shift();
+            }
+          }
+        }
+        this.lastVelocity = velocity;
+
         const angle = Math.atan2(dy, dx);
         if (this.lastAngle !== null) {
           let diff = Math.abs(angle - this.lastAngle);
@@ -364,6 +385,31 @@ export class AntiCheatGuard {
       }
     }
 
+    // Mouse Acceleration & Deceleration Biometric Analysis
+    if (this.accelerationSamples.length >= 6) {
+      const aMean = this.accelerationSamples.reduce((a, b) => a + b, 0) / this.accelerationSamples.length;
+      const aVar = this.accelerationSamples.reduce((acc, a) => acc + Math.pow(a - aMean, 2), 0) / this.accelerationSamples.length;
+      const maxA = Math.max(...this.accelerationSamples);
+
+      // 1. Unnatural near-zero acceleration variance (linear machine bots / macros)
+      if (aVar < 0.00002 && aMean > 0.005) {
+        trust -= 22.0; // Uniform acceleration machine signature
+      }
+      // 2. Extreme superhuman acceleration spike (instant mouse teleportation / warp injection)
+      if (maxA > 20.0) {
+        trust -= 25.0; // Teleportation injection detected
+      }
+    }
+
+    if (this.decelerationSamples.length >= 6) {
+      const dMean = this.decelerationSamples.reduce((a, b) => a + b, 0) / this.decelerationSamples.length;
+      const dVar = this.decelerationSamples.reduce((acc, d) => acc + Math.pow(d - dMean, 2), 0) / this.decelerationSamples.length;
+      // Abrupt stopping without organic deceleration curves
+      if (dVar < 0.00002 && dMean > 0.005) {
+        trust -= 18.0; // Scripted deceleration pattern
+      }
+    }
+
     // Keystroke flight time std dev (uniform intervals indicate script injection)
     if (this.flightTimes.length >= 8) {
       const fMean = this.flightTimes.reduce((a, b) => a + b, 0) / this.flightTimes.length;
@@ -381,8 +427,24 @@ export class AntiCheatGuard {
       strikes: this.strikes,
       angularChanges: this.angularDirectionChanges,
       velocityVariance: this._getVelocityVariance(),
+      accelerationVariance: this._getAccelerationVariance(),
+      decelerationVariance: this._getDecelerationVariance(),
       flightTimeStdDev: this._getFlightTimeStdDev(),
     });
+  }
+
+  _getAccelerationVariance() {
+    if (this.accelerationSamples.length < 2) return 0;
+    const mean = this.accelerationSamples.reduce((a, b) => a + b, 0) / this.accelerationSamples.length;
+    const variance = this.accelerationSamples.reduce((acc, a) => acc + Math.pow(a - mean, 2), 0) / this.accelerationSamples.length;
+    return Math.round(variance * 100000) / 100000;
+  }
+
+  _getDecelerationVariance() {
+    if (this.decelerationSamples.length < 2) return 0;
+    const mean = this.decelerationSamples.reduce((a, b) => a + b, 0) / this.decelerationSamples.length;
+    const variance = this.decelerationSamples.reduce((acc, d) => acc + Math.pow(d - mean, 2), 0) / this.decelerationSamples.length;
+    return Math.round(variance * 100000) / 100000;
   }
 
   _getVelocityVariance() {
@@ -399,6 +461,10 @@ export class AntiCheatGuard {
     return Math.round(Math.sqrt(variance) * 10) / 10;
   }
 
+  getTrustScore() {
+    return this.humanTrustScore;
+  }
+
   getMetrics() {
     return {
       humanTrustScore: this.humanTrustScore,
@@ -408,7 +474,13 @@ export class AntiCheatGuard {
       isLocked: this.isLocked,
       angularChanges: this.angularDirectionChanges,
       velocityVariance: this._getVelocityVariance(),
+      accelerationVariance: this._getAccelerationVariance(),
+      decelerationVariance: this._getDecelerationVariance(),
       flightTimeStdDev: this._getFlightTimeStdDev(),
     };
   }
+}
+
+if (typeof window !== "undefined") {
+  window.AntiCheatGuard = AntiCheatGuard;
 }

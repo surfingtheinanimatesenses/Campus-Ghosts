@@ -18,6 +18,7 @@ const App = (() => {
   let facultyKThreshold = 5;
   let facultyRawAuditMode = false;
   let facultySosEnabled = true;
+  let appGuard = null;
 
   // Duel HUD State
   let duelMode = 'Bug Hunt';
@@ -106,6 +107,10 @@ const App = (() => {
     const h = userData.ghost_hash || '70b681a4ddb972245c12599b3600b2c1deeb829d7d29f366e4765d1bcfe2e0c7';
     document.getElementById('topbar-hash-text').textContent = `sha256:${h.slice(0, 4)}...${h.slice(-4)}`;
     document.getElementById('topbar-section-pill').textContent = userData.section || 'CSE-1C';
+
+    // Arm AntiCheatGuard for student editor session
+    setupAppGuard();
+    if (appGuard) appGuard.startDuel(false);
 
     // Start live duel timer & rival race
     startDuelTimer();
@@ -355,8 +360,16 @@ const App = (() => {
       const res = await api('POST', '/auth/email/verify-otp', { email, otp });
       toast(`Verified! Derived anonymous salt: ${res.suggested_salt}`, 'success');
 
+      // Derive student roll deterministically or request
+      let rollNumber = '2601010043';
+      const emailPrefix = email.split('@')[0];
+      const matchNum = emailPrefix.match(/\d{4,10}/);
+      if (matchNum) {
+        rollNumber = matchNum[0];
+      }
+
       const resp = await api('POST', '/auth/student-login', {
-        roll_number: '2601010043',
+        roll_number: rollNumber,
         secret_salt: res.suggested_salt,
         section: 'CSE-1C',
       });
@@ -414,6 +427,11 @@ const App = (() => {
     clearPolling();
     if (duelTimerInterval) clearInterval(duelTimerInterval);
     if (rivalInterval) clearInterval(rivalInterval);
+    if (appGuard) {
+      appGuard.stopDuel();
+      appGuard.destroy();
+      appGuard = null;
+    }
     localStorage.removeItem('campusghosts_session');
     session = null;
     const backBtn = document.getElementById('btn-back-to-portal');
@@ -643,14 +661,15 @@ const App = (() => {
     const ratingEl = document.getElementById('pane-prob-rating');
     if (ratingEl) ratingEl.textContent = `Target Rating: ${selectedProblem.problem_rating || 1250}`;
 
-    // Populate Editor
-    const lang = selectedProblem.language === 'cpp' ? 'C++' : selectedProblem.language === 'python' ? 'Python' : selectedProblem.language;
     const badgeEl = document.getElementById('editor-lang-badge');
-    if (badgeEl) badgeEl.textContent = lang;
+    if (badgeEl) {
+      const l = selectedProblem.language;
+      badgeEl.textContent = l === 'cpp' ? 'C++' : l === 'python' ? 'Python' : l;
+    }
 
-    // Load buggy starter by default if editor is empty
+    // Populate Editor with selected problem starter
     const editor = getEditor();
-    if (editor && (!editor.value || editor.value.trim() === '')) {
+    if (editor) {
       editor.value = selectedProblem.buggy_code || '';
     }
     updateLineNumbers();
@@ -684,6 +703,48 @@ const App = (() => {
   }
 
   // ── Code Editor Helpers ──────────────────────────────────────
+  function setupAppGuard() {
+    const editor = getEditor();
+    if (!editor || !window.AntiCheatGuard) return;
+    if (appGuard) return;
+
+    appGuard = new window.AntiCheatGuard({
+      editorEl: editor,
+      onPasteBlocked: () => {
+        toast('PASTE BLOCKED: External clipboard paste intercepted! (-18 trust score)', 'error');
+      },
+      onStrike: (count, reason) => {
+        toast(`Warning Strike ${count}/3: ${reason}`, 'warning');
+      },
+      onLockout: (count, reason, timeLeft) => {
+        const overlay = document.getElementById('student-lockout-overlay');
+        const reasonEl = document.getElementById('student-lockout-reason');
+        const timerEl = document.getElementById('student-lockout-timer');
+        if (!overlay) return;
+        if (timeLeft > 0) {
+          overlay.classList.remove('hidden');
+          if (reasonEl) reasonEl.textContent = `${reason} (Strike ${count}/3)`;
+          if (timerEl) timerEl.textContent = String(timeLeft);
+        } else {
+          overlay.classList.add('hidden');
+        }
+      },
+      onDisqualify: (reason) => {
+        const overlay = document.getElementById('student-lockout-overlay');
+        if (overlay) overlay.classList.add('hidden');
+        toast(`DISQUALIFIED (3 Strikes): Proctored examination terminated. ${reason}`, 'error');
+        showDuelVerdict(false, `Disqualified for anti-proctoring violations (${reason}).`);
+      },
+      onTrustUpdate: (score, metrics) => {
+        const trustBadge = document.getElementById('student-trust-badge');
+        if (trustBadge) {
+          trustBadge.textContent = `${score}% Trust`;
+          trustBadge.className = score >= 80 ? 'text-[10px] font-mono text-emerald' : score >= 50 ? 'text-[10px] font-mono text-amber' : 'text-[10px] font-mono text-crimson';
+        }
+      }
+    });
+  }
+
   function getEditor() {
     return document.getElementById('code-editor') || document.getElementById('lab-code-editor');
   }
@@ -696,6 +757,8 @@ const App = (() => {
     const editor = getEditor();
     const gutter = getGutter();
     if (!editor) return;
+
+    setupAppGuard();
 
     editor.addEventListener('input', () => {
       updateLineNumbers();
@@ -801,6 +864,7 @@ const App = (() => {
         ghost_hash: (session && session.user && session.user.ghost_hash) || null,
         language: selectedProblem.language,
         won_duel: !rivalFinished,
+        human_trust_score: appGuard ? appGuard.humanTrustScore : 100.0,
       };
 
       const result = await api('POST', '/arena/submit-code', payload);
@@ -866,12 +930,12 @@ const App = (() => {
           </div>
           <span class="text-[10px] font-mono font-semibold ${passed ? 'text-emerald' : 'text-crimson'}">${passed ? 'PASS' : 'FAIL'}</span>
         </div>
-        <div class="test-row ${passed ? 'passed' : 'passed'}">
+        <div class="test-row ${passed ? 'passed' : 'failed'}">
           <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-emerald"></span>
+            <span class="w-2 h-2 rounded-full ${passed ? 'bg-emerald' : 'bg-crimson'}"></span>
             <span class="text-xs font-mono">Case 3 (Memory Invariant)</span>
           </div>
-          <span class="text-[10px] font-mono text-emerald font-semibold">PASS</span>
+          <span class="text-[10px] font-mono font-semibold ${passed ? 'text-emerald' : 'text-crimson'}">${passed ? 'PASS' : 'FAIL'}</span>
         </div>
       `;
     }
@@ -931,8 +995,8 @@ const App = (() => {
               <span class="text-[10px] font-mono font-semibold text-crimson uppercase">${esc(diag.concept_tag || 'ERROR')}</span>
               <span class="text-[10px] font-mono font-semibold text-crimson">${deltaFormatted}</span>
             </div>
-            <p class="text-xs font-medium text-text-primary mb-1">${esc(diag.root_cause || 'Invariant violation detected')}</p>
-            <p class="text-[11px] text-text-secondary leading-relaxed">${esc(diag.misconception || '')}</p>
+            <p class="text-xs font-medium text-text-primary mb-1">${esc(diag.root_cause || diag.socratic_hint || 'Invariant violation detected')}</p>
+            <p class="text-[11px] text-text-secondary leading-relaxed">${esc(diag.misconception || diag.optimization_note || diag.topic || '')}</p>
           </div>
 
           <div class="p-3 rounded bg-surface border border-border space-y-1.5">
@@ -941,7 +1005,7 @@ const App = (() => {
           </div>
 
           <div class="p-2.5 rounded bg-panel border border-border-subtle text-[11px] text-text-muted">
-            <strong class="text-text-secondary font-mono">Invariant:</strong> ${esc(diag.invariant_to_preserve || 'Preserve allocated memory space before dereferencing.')}
+            <strong class="text-text-secondary font-mono">Invariant:</strong> ${esc(diag.invariant_to_preserve || (diag.concept_tag ? `Strict enforcement of ${diag.concept_tag} constraints` : 'Preserve allocated memory space before dereferencing.'))}
           </div>
         </div>
       `;
@@ -1223,6 +1287,8 @@ const App = (() => {
         localStorage.setItem('campusghosts_session', JSON.stringify(session));
       }
 
+      // Sync fresh profile status from server
+      fetchHealthStatus();
       await loadSosFlares();
     } catch (err) {
       toast(err.message, 'error');
@@ -1257,6 +1323,7 @@ const App = (() => {
             <td class="p-3 font-mono tabular-nums text-text-primary rating-cell">${valRating}</td>
             <td class="p-3 font-mono tabular-nums text-text-muted">${s.streak} 🔥</td>
             <td class="p-3 font-mono tabular-nums text-text-muted">${s.solved_count}</td>
+            <td class="p-3 font-mono tabular-nums text-text-muted">${s.human_trust_score !== undefined ? s.human_trust_score : 100}%</td>
           </tr>
         `;
       }).join('');
@@ -1270,6 +1337,7 @@ const App = (() => {
               <th class="p-3">Rating</th>
               <th class="p-3">Streak</th>
               <th class="p-3">Solved</th>
+              <th class="p-3">Trust</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -1428,7 +1496,7 @@ const App = (() => {
                 <span class="concept-pill text-[9px]">${esc(c.concept_tag)}</span>
               </div>
               <span class="text-xs font-mono font-semibold ${isMasked ? 'text-amber' : isRawExposed ? 'text-crimson' : 'text-emerald'}">
-                ${c.display_students} students
+                ${c.display_count || c.display_students || (c.student_count !== null ? c.student_count : '< k')} students
               </span>
             </div>
 
@@ -1733,7 +1801,7 @@ const App = (() => {
   function downloadRecoveryCard() {
     if (!session || !session.user) return;
     const u = session.user;
-    const txt = `CAMPUSGHOSTS ZERO-KNOWLEDGE RECOVERY CARD
+    const txt = u.recovery_key_text || `CAMPUSGHOSTS ZERO-KNOWLEDGE RECOVERY CARD
 ----------------------------------------
 Roll Number : ${u.roll_number || '2601010043'}
 Ghost Alias : ${u.alias || 'Shadow_188'}

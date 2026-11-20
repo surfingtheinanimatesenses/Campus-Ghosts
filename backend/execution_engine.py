@@ -28,7 +28,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s [execution_engine]
 WANDBOX_API_URL = "https://wandbox.org/api/compile.json"
 JUDGE0_API_URL = os.environ.get("JUDGE0_URL", "")
 JUDGE0_API_KEY = os.environ.get("JUDGE0_API_KEY", "")
-REQUEST_TIMEOUT_SECONDS = 6.0
+REQUEST_TIMEOUT_SECONDS = 12.0
 
 # Supported compiler mappings on Wandbox
 COMPILERS = {
@@ -188,18 +188,30 @@ def run_problem_sandbox(
     lang_key = _normalize_lang(language)
     expected_output = _clean_output(problem.get("expected_output", ""))
 
+    # Prepare runnable source (append test invocation if student provided only a bare function)
+    run_code = code
+    if lang_key == "python":
+        if "def factorial" in code and "print(" not in code:
+            run_code = code + "\n\nprint(factorial(5))\n"
+    elif lang_key == "cpp":
+        if "main(" not in code and "main (" not in code:
+            if "void swap" in code:
+                run_code = code + "\n\nint main() { int x = 5, y = 10; swap(&x, &y); std::cout << x << \" \" << y << std::endl; return 0; }\n"
+            elif "arraySum" in code:
+                run_code = code + "\n\nint main() { int arr[] = {1, 2, 3, 4, 5}; std::cout << arraySum(arr, 5) << std::endl; return 0; }\n"
+
     # 1. Try Judge0 if configured
     res: Optional[Dict[str, Any]] = None
     if JUDGE0_API_URL:
         try:
-            res = execute_in_judge0(code, lang_key, stdin)
+            res = execute_in_judge0(run_code, lang_key, stdin)
         except Exception as e:
             logger.warning("Judge0 execution failed, falling back to Wandbox: %s", e)
 
     # 2. Try Wandbox Container Sandbox
     if not res:
         try:
-            res = execute_in_wandbox(code, lang_key, stdin)
+            res = execute_in_wandbox(run_code, lang_key, stdin)
         except Exception as e:
             logger.warning("Wandbox execution failed (%s), will use offline fallback", e)
             res = None
@@ -259,6 +271,10 @@ def run_problem_sandbox(
             if pat in code:
                 passed = False
                 break
+
+        missing_tokens = bug_sigs.get("missing_tokens", [])
+        if missing_tokens and not any(tok in code for tok in missing_tokens):
+            passed = False
 
         status = "Accepted" if passed else "Wrong Answer"
         concept_tag = "OPTIMAL_SOLUTION" if passed else problem.get("concept_tag", "INVARIANT_VIOLATION")

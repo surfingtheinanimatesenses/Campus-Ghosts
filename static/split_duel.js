@@ -122,7 +122,7 @@ function initGuardAndReplay() {
         }
         const toastText = document.getElementById("toast-anti-cheat-text");
         if (toastText && !showToast._timer) {
-          toastText.textContent = `Anti-Cheat Active • Paste blocked: ${metrics.blockedPasteAttempts} • Flight σ: ${metrics.flightTimeStdDev}ms • Velocity var: ${metrics.velocityVariance}`;
+          toastText.textContent = `Anti-Cheat Active • Paste blocked: ${metrics.blockedPasteAttempts} • Flight σ: ${metrics.flightTimeStdDev}ms • Accel var: ${metrics.accelerationVariance || 0} • Decel var: ${metrics.decelerationVariance || 0}`;
         }
       },
       onPasteBlocked: () => {
@@ -345,7 +345,7 @@ function initCodeSubmit() {
         language: lang,
         problem_id: state.activeProblemId || "arr-bound",
         human_trust_score: state.guard ? state.guard.humanTrustScore : 100.0,
-        opponent_elo: 1200,
+        opponent_elo: state.replay ? state.replay.rivalElo : 1240,
       };
 
       const resp = await fetch("/api/duel/submit", {
@@ -631,8 +631,8 @@ async function loadSchemaInspect() {
       const students = data.verified_students_sample || [];
       tbodyStudents.innerHTML = students.map(s => `
         <tr>
-          <td class="p-2 font-bold text-zinc-100">${escapeHtml(s.roll_no)}</td>
-          <td class="p-2 text-zinc-400 text-[10px]">${escapeHtml(s.verified_at ? s.verified_at.slice(0, 19) : "")}</td>
+          <td class="p-2 font-bold text-zinc-100">${escapeHtml(s.roll_no || s.roll_number)}</td>
+          <td class="p-2 text-zinc-400 text-[10px]">${escapeHtml((s.verified_at || s.registered_at || "").slice(0, 19))}</td>
         </tr>
       `).join("") || '<tr><td colspan="2" class="p-3 text-center text-zinc-500">No records found</td></tr>';
     }
@@ -641,9 +641,9 @@ async function loadSchemaInspect() {
       const ghosts = data.ghost_profiles_sample || [];
       tbodyGhosts.innerHTML = ghosts.map(g => `
         <tr>
-          <td class="p-2 text-zinc-400 text-[10px]" title="${escapeHtml(g.commitment_hash)}">${escapeHtml(g.commitment_hash.slice(0, 10))}...</td>
+          <td class="p-2 text-zinc-400 text-[10px]" title="${escapeHtml(g.commitment_hash || g.ghost_hash)}">${escapeHtml((g.commitment_hash || g.ghost_hash || "").slice(0, 10))}...</td>
           <td class="p-2 font-bold text-emerald-400">${escapeHtml(g.alias)}</td>
-          <td class="p-2 text-zinc-200">${escapeHtml(String(g.elo_rating))}</td>
+          <td class="p-2 text-zinc-200">${escapeHtml(String(g.elo_rating || g.rating || 1200))}</td>
         </tr>
       `).join("") || '<tr><td colspan="3" class="p-3 text-center text-zinc-500">No records found</td></tr>';
     }

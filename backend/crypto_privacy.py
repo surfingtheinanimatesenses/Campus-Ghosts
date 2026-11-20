@@ -113,7 +113,8 @@ def init_db(db_path: Optional[Union[str, Path]] = None, drop_existing: bool = Fa
                     section TEXT NOT NULL,
                     rating INTEGER DEFAULT 1200,
                     streak INTEGER DEFAULT 1,
-                    solved_count INTEGER DEFAULT 0
+                    solved_count INTEGER DEFAULT 0,
+                    human_trust_score REAL DEFAULT 100.0
                 );
                 """
             )
