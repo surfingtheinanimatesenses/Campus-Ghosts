@@ -287,6 +287,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   initArenaPortal();
   initPlacementClaim();
   initOutcomeModal();
+  if (window.lucide) window.lucide.createIcons();
 });
 
 async function loadProblemCatalog() {
@@ -527,6 +528,11 @@ function initStudentPortal() {
     editor.addEventListener("input", () => {
       const stats = document.getElementById("practice-editor-stats");
       if (stats) stats.textContent = `${editor.value.split("\n").length} lines • ${editor.value.length} chars`;
+      syncPracticeGutter();
+    });
+    editor.addEventListener("scroll", () => {
+      const gutter = document.getElementById("practice-gutter");
+      if (gutter) gutter.scrollTop = editor.scrollTop;
     });
   }
 
@@ -545,10 +551,12 @@ function initStudentPortal() {
   });
   document.getElementById("btn-practice-buggy")?.addEventListener("click", () => {
     if (editor) editor.value = getProblemCode(state.practiceProblemId, state.practiceLanguage, "buggy_code");
+    syncPracticeGutter();
     showToast("Loaded buggy invariant sample for testing.", "warning");
   });
   document.getElementById("btn-practice-clean")?.addEventListener("click", () => {
     if (editor) editor.value = getProblemCode(state.practiceProblemId, state.practiceLanguage, "starter_code");
+    syncPracticeGutter();
     showToast("Loaded verified solution.", "success");
   });
 
@@ -579,17 +587,30 @@ function initStudentPortal() {
   });
 }
 
+function syncPracticeGutter() {
+  const editor = document.getElementById("editor-practice-student");
+  const gutter = document.getElementById("practice-gutter");
+  if (!editor || !gutter) return;
+  const lineCount = Math.max(1, editor.value.split("\n").length);
+  gutter.textContent = Array.from({ length: lineCount }, (_, i) => i + 1).join("\n");
+}
+
 function loadPracticeProblem() {
   const prob = getProblemMeta(state.practiceProblemId);
   const titleEl = document.getElementById("practice-prob-title");
   const badgeEl = document.getElementById("practice-prob-badge");
   const descEl = document.getElementById("practice-prob-desc");
+  const fileTab = document.getElementById("practice-file-tab");
   const editor = document.getElementById("editor-practice-student");
 
   if (titleEl) titleEl.textContent = prob.title;
   if (badgeEl) badgeEl.textContent = `${prob.concept_tag} • ${prob.difficulty}`;
   if (descEl) descEl.textContent = prob.description;
-  if (editor) editor.value = getProblemCode(state.practiceProblemId, state.practiceLanguage, "starter_code");
+  if (fileTab) fileTab.textContent = state.practiceLanguage === "python" ? "solution.py" : "solution.cpp";
+  if (editor) {
+    editor.value = getProblemCode(state.practiceProblemId, state.practiceLanguage, "starter_code");
+    syncPracticeGutter();
+  }
 }
 
 function renderPracticeResult(result) {
@@ -668,6 +689,15 @@ async function loadHeatmapData() {
     if (!resp.ok) return;
     const data = await resp.json();
     const clusters = data.clusters || [];
+
+    const kpiClusters = document.getElementById("fac-kpi-clusters");
+    const kpiMasked = document.getElementById("fac-kpi-masked");
+    const kpiTop = document.getElementById("fac-kpi-top-tag");
+    if (kpiClusters) kpiClusters.textContent = String(clusters.length);
+    if (kpiMasked) kpiMasked.textContent = `${clusters.filter((c) => c.masked).length} Masked`;
+    const topUnmasked = clusters.find((c) => !c.masked) || clusters[0];
+    if (kpiTop) kpiTop.textContent = topUnmasked ? topUnmasked.concept_tag : "None";
+
     renderHeatmapChart(clusters);
     renderTelemetryTable(clusters);
   } catch (e) {
@@ -1034,19 +1064,24 @@ function renderArenaServers() {
 
   srvContainer.innerHTML = state.servers.map((srv) => {
     const isSelected = srv.server_id === state.selectedServerId;
+    const loadPct = Math.min(100, Math.round((srv.active_players / Math.max(1, srv.capacity)) * 100));
+    const pingColor = srv.ping_ms <= 20 ? "text-emerald-400" : srv.ping_ms <= 45 ? "text-cyan-400" : "text-amber-400";
     return `
-      <button type="button" data-select-server="${escapeHtml(srv.server_id)}" class="server-card ${isSelected ? "selected" : ""} w-full text-left p-3 rounded border border-zinc-800 bg-zinc-950 hover:border-cyan-700/80 transition-colors cursor-pointer">
+      <button type="button" data-select-server="${escapeHtml(srv.server_id)}" class="server-card ${isSelected ? "selected" : ""} w-full text-left p-3.5 rounded-md border border-zinc-800 bg-zinc-950/95 hover:border-cyan-700/80 cursor-pointer">
         <div class="flex items-center justify-between font-mono">
           <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span class="w-2 h-2 rounded-full ${isSelected ? "bg-cyan-400 shadow-[0_0_8px_#22D3EE]" : "bg-emerald-500"}"></span>
             <span class="font-bold text-zinc-100 text-xs">${escapeHtml(srv.server_id)}</span>
             <span class="text-zinc-400 text-[11px]">${escapeHtml(srv.name)}</span>
           </div>
-          <span class="text-emerald-400 text-[10px] font-semibold">${srv.ping_ms} ms</span>
+          <span class="${pingColor} text-[10px] font-bold bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800">${srv.ping_ms} ms</span>
         </div>
-        <div class="flex items-center justify-between text-[10px] font-mono text-zinc-500 mt-1.5">
+        <div class="flex items-center justify-between text-[10px] font-mono text-zinc-500 mt-2">
           <span>${escapeHtml(srv.ruleset)}</span>
           <span>${srv.active_players}/${srv.capacity} Online &bull; ${srv.open_rooms} Rooms</span>
+        </div>
+        <div class="w-full h-1 bg-zinc-900 rounded-full overflow-hidden mt-2">
+          <div class="h-full ${isSelected ? "bg-cyan-400" : "bg-emerald-500/70"}" style="width:${loadPct}%"></div>
         </div>
       </button>
     `;

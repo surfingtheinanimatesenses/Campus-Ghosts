@@ -19,6 +19,7 @@
     :root {
       --canvas: #09090B;
       --panel: #111113;
+      --panel-elevated: #141418;
       --border: #27272A;
       --emerald: #10B981;
       --amber: #F59E0B;
@@ -27,59 +28,88 @@
     body {
       background-color: var(--canvas);
       color: #FAFAFA;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Roboto, sans-serif;
     }
     .font-mono {
       font-family: "JetBrains Mono", Menlo, Consolas, monospace;
     }
+    .bg-dot-matrix {
+      background-image: radial-gradient(rgba(255, 255, 255, 0.055) 1px, transparent 1px);
+      background-size: 22px 22px;
+    }
     .custom-scroll::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+      width: 5px;
+      height: 5px;
     }
     .custom-scroll::-webkit-scrollbar-track {
-      background: #111113;
+      background: #0D0D10;
     }
     .custom-scroll::-webkit-scrollbar-thumb {
       background: #27272A;
       border-radius: 3px;
     }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: #3F3F46;
+    }
+    .nav-pill {
+      transition: all 150ms ease;
+    }
     .nav-pill.active-emerald {
       background-color: rgba(16, 185, 129, 0.14);
       color: #34D399;
       border-color: rgba(16, 185, 129, 0.45);
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.12);
     }
     .nav-pill.active-amber {
       background-color: rgba(245, 158, 11, 0.14);
       color: #FBBF24;
       border-color: rgba(245, 158, 11, 0.45);
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.12);
     }
     .nav-pill.active-cyan {
       background-color: rgba(6, 182, 212, 0.14);
       color: #22D3EE;
       border-color: rgba(6, 182, 212, 0.45);
+      box-shadow: 0 0 12px rgba(6, 182, 212, 0.12);
+    }
+    .server-card {
+      transition: all 160ms ease;
     }
     .server-card.selected {
-      border-color: #06B6D4;
-      background-color: rgba(6, 182, 212, 0.08);
+      border-color: rgba(6, 182, 212, 0.75);
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.10), rgba(17, 17, 19, 0.96));
+      box-shadow: 0 0 18px rgba(6, 182, 212, 0.12);
+    }
+    .editor-surface {
+      tab-size: 4;
+      caret-color: #10B981;
     }
   </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden text-xs bg-[#09090B]">
+<body class="h-screen flex flex-col overflow-hidden text-xs bg-[#09090B] antialiased">
 
-  <!-- Global Non-Blocking Status Banner (Top-Right Floating Toast) -->
-  <div id="global-toast" role="status" aria-live="polite" class="hidden fixed bottom-4 right-4 z-[60] max-w-md bg-[#111113] border border-zinc-700 px-3.5 py-2.5 rounded-md shadow-2xl font-mono text-[11px] flex items-center gap-2.5">
-    <span id="global-toast-dot" class="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
-    <span id="global-toast-msg" class="text-zinc-200 leading-snug">Ready</span>
+  <!-- Global Non-Blocking Status Banner -->
+  <div id="global-toast" role="status" aria-live="polite" class="hidden fixed bottom-4 right-4 z-[60] max-w-md bg-[#111113]/95 backdrop-blur-md border border-zinc-700/80 px-3.5 py-2.5 rounded-lg shadow-[0_8px_30px_rgba(0,0,0,0.65)] font-mono text-[11px] flex items-center gap-2.5">
+    <span id="global-toast-dot" class="w-2 h-2 rounded-full bg-emerald-500 shrink-0 shadow-[0_0_8px_rgba(16,185,129,0.7)]"></span>
+    <span id="global-toast-msg" class="text-zinc-100 leading-snug">Ready</span>
   </div>
 
   <!-- ══════════════════════════════════════════════════════════════════════ -->
   <!-- VIEW 0: INSTITUTIONAL ROLE GATEWAY (#view-portal-gate)                 -->
   <!-- ══════════════════════════════════════════════════════════════════════ -->
-  <div id="view-portal-gate" class="h-screen w-screen flex flex-col items-center justify-between p-6 overflow-y-auto custom-scroll bg-[#09090B]">
+  <div id="view-portal-gate" class="h-screen w-screen flex flex-col items-center justify-between p-6 overflow-y-auto custom-scroll bg-[#09090B] bg-dot-matrix relative">
+    <!-- Subtle Top Ambient Glow -->
+    <div aria-hidden="true" class="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[780px] h-[260px] bg-gradient-to-b from-emerald-500/[0.07] via-cyan-500/[0.03] to-transparent blur-3xl"></div>
+
     <!-- Brand Hero Header -->
-    <div class="flex flex-col items-center mt-4 mb-6 text-center max-w-2xl shrink-0">
-      <div class="flex items-center gap-2.5 mb-2">
-        <div class="w-9 h-9 rounded-lg bg-zinc-900 border border-zinc-700/80 flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.18)]">
+    <header class="relative z-10 flex flex-col items-center mt-3 mb-5 text-center max-w-2xl shrink-0">
+      <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-zinc-900/90 border border-zinc-800 text-[10px] font-mono text-zinc-400 mb-3 shadow-sm">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_6px_#10B981]"></span>
+        <span>KRMU CSE ZERO-KNOWLEDGE ARENA &bull; INFRASTRUCTURE v3.0</span>
+      </div>
+
+      <div class="flex items-center gap-3 mb-2">
+        <div class="w-10 h-10 rounded-lg bg-[#111113] border border-zinc-700/80 flex items-center justify-center shadow-[0_0_24px_rgba(16,185,129,0.2)]">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M12 2L3 7v10l9 5 9-5V7l-9-5Z"/>
             <path d="M12 22V12"/>
@@ -87,300 +117,332 @@
             <path d="m12 12 9-5"/>
           </svg>
         </div>
-        <h1 class="text-2xl font-bold tracking-tight text-zinc-100 flex items-center gap-2">
+        <h1 class="text-3xl font-bold tracking-tight text-zinc-50 flex items-center gap-2.5">
           CampusGhosts
-          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-emerald-400 font-semibold border border-zinc-700">v3.0</span>
         </h1>
       </div>
+
       <p class="text-xs text-zinc-400 leading-relaxed max-w-xl">
-        Zero-Knowledge Competitive Systems Coding Infrastructure &amp; Differential Telemetry. Select your portal below — each role enters an isolated workspace built specifically for its workflow.
+        Zero-Knowledge Competitive Systems Coding &amp; Differential Telemetry. Select your workspace gateway below—early learning mistakes stay mathematically unlinked from institutional student identities.
       </p>
-      <div class="flex items-center gap-4 mt-3 text-[11px] font-mono text-zinc-500 flex-wrap justify-center">
-        <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Split-Table SQLite (0 FKs)</span>
-        <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>k-Anonymity (k &ge; 5)</span>
-        <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>Multi-Server 1v1 Arena</span>
+
+      <div class="flex items-center gap-2.5 mt-3.5 text-[11px] font-mono text-zinc-400 flex-wrap justify-center">
+        <span class="px-2.5 py-1 rounded bg-[#111113] border border-zinc-800/90 flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_#10B981]"></span>Split-Table SQLite (0 FKs)
+        </span>
+        <span class="px-2.5 py-1 rounded bg-[#111113] border border-zinc-800/90 flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_6px_#F59E0B]"></span>k-Anonymity (k &ge; 5)
+        </span>
+        <span class="px-2.5 py-1 rounded bg-[#111113] border border-zinc-800/90 flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-cyan-500 shadow-[0_0_6px_#06B6D4]"></span>Live Multi-Server Arena
+        </span>
       </div>
-    </div>
+    </header>
 
     <!-- 3-Column Role Gateway Grid -->
-    <div class="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-5 my-auto">
+    <main class="relative z-10 w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-5 my-auto">
 
-      <!-- Card 1: Student Portal Login -->
-      <div class="bg-[#111113] border border-zinc-800 hover:border-emerald-700/60 transition-colors rounded-lg p-5 flex flex-col justify-between relative overflow-hidden shadow-xl">
-        <div class="absolute top-0 left-0 right-0 h-1 bg-emerald-500"></div>
+      <!-- Card 1: Student Portal -->
+      <section class="group bg-[#111113]/95 backdrop-blur-sm border border-zinc-800 hover:border-emerald-600/60 transition-all duration-200 rounded-lg p-5 flex flex-col justify-between relative overflow-hidden shadow-[0_12px_36px_rgba(0,0,0,0.45)]">
+        <div class="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500/30 via-emerald-400 to-emerald-500/20"></div>
         <div>
-          <div class="flex items-center justify-between mb-2">
-            <div class="flex items-center gap-2">
-              <span class="w-6 h-6 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center justify-center font-bold text-xs">ZK</span>
+          <div class="flex items-center justify-between mb-2.5">
+            <div class="flex items-center gap-2.5">
+              <span class="w-7 h-7 rounded-md bg-emerald-950/90 text-emerald-400 border border-emerald-800/80 flex items-center justify-center shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                <i data-lucide="terminal" class="w-3.5 h-3.5"></i>
+              </span>
               <h2 class="text-sm font-bold text-zinc-100">Student Portal</h2>
             </div>
-            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">4 Pages</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-400 border border-emerald-800/80">ZK Ghost</span>
           </div>
           <p class="text-[11px] text-zinc-400 mb-4 leading-relaxed">
-            Personal zero-knowledge coding hub with dedicated pages for your Dashboard, Solo Practice Lab, Placement Credentials, and Leaderboard.
+            Private coding workspace with separate pages for your Dashboard, Solo Practice Lab, Placement Vault, and Cohort Leaderboard.
           </p>
 
           <form id="portal-form-student" onsubmit="event.preventDefault();" class="space-y-3">
             <div>
               <label for="portal-input-roll" class="block text-[10px] font-mono text-zinc-400 uppercase tracking-wider mb-1">Institutional Roll Number</label>
-              <input id="portal-input-roll" type="text" placeholder="e.g. 2601010043" class="w-full bg-zinc-950 border border-zinc-800 rounded px-2.5 py-1.5 font-mono text-xs text-zinc-200 outline-none focus:border-emerald-500 transition-colors" />
+              <input id="portal-input-roll" type="text" placeholder="e.g. 2601010043" class="w-full bg-zinc-950 border border-zinc-800 rounded px-2.5 py-2 font-mono text-xs text-zinc-100 outline-none focus:border-emerald-500 transition-colors" />
             </div>
 
             <div>
-              <label for="portal-input-salt" class="block text-[10px] font-mono text-zinc-400 uppercase tracking-wider mb-1">Private Secret Salt (min 8 chars)</label>
+              <label for="portal-input-salt" class="block text-[10px] font-mono text-zinc-400 uppercase tracking-wider mb-1">Private Secret Salt</label>
               <div class="flex gap-1.5">
-                <input id="portal-input-salt" type="password" placeholder="e.g. krmu2026_salt" class="flex-1 bg-zinc-950 border border-zinc-800 rounded px-2.5 py-1.5 font-mono text-xs text-zinc-200 outline-none focus:border-emerald-500 transition-colors" />
-                <button type="button" id="btn-portal-gen-salt" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-2 py-1.5 rounded font-mono text-[10px] border border-zinc-700 transition-colors cursor-pointer">
+                <input id="portal-input-salt" type="password" placeholder="Min 8 characters" class="flex-1 bg-zinc-950 border border-zinc-800 rounded px-2.5 py-2 font-mono text-xs text-zinc-100 outline-none focus:border-emerald-500 transition-colors" />
+                <button type="button" id="btn-portal-gen-salt" class="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 px-2.5 py-1.5 rounded font-mono text-[10px] border border-zinc-700/80 transition-colors cursor-pointer">
                   Random
                 </button>
               </div>
             </div>
 
-            <button type="button" id="btn-portal-student-enter" class="w-full bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold py-2 rounded text-xs font-mono transition-colors flex items-center justify-center gap-1.5 mt-1 cursor-pointer">
+            <button type="button" id="btn-portal-student-enter" class="w-full bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold py-2.5 rounded text-xs font-mono transition-all flex items-center justify-center gap-1.5 shadow-[0_0_20px_rgba(16,185,129,0.22)] mt-1 cursor-pointer">
               <span>Enter Student Portal &rarr;</span>
             </button>
           </form>
         </div>
 
         <div class="mt-4 pt-3 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
-          <span class="text-zinc-500">Demo Account:</span>
-          <button type="button" id="btn-portal-demo-fill" class="text-emerald-400 hover:underline font-mono text-[10px] cursor-pointer">
+          <span class="text-zinc-500 font-mono">Demo Profile:</span>
+          <button type="button" id="btn-portal-demo-fill" class="text-emerald-400 hover:text-emerald-300 hover:underline font-mono text-[10px] cursor-pointer">
             Quick-Fill (2601010043)
           </button>
         </div>
-      </div>
+      </section>
 
-      <!-- Card 2: Faculty Console Login -->
-      <div class="bg-[#111113] border border-zinc-800 hover:border-amber-700/60 transition-colors rounded-lg p-5 flex flex-col justify-between relative overflow-hidden shadow-xl">
-        <div class="absolute top-0 left-0 right-0 h-1 bg-amber-500"></div>
+      <!-- Card 2: Faculty Console -->
+      <section class="group bg-[#111113]/95 backdrop-blur-sm border border-zinc-800 hover:border-amber-600/60 transition-all duration-200 rounded-lg p-5 flex flex-col justify-between relative overflow-hidden shadow-[0_12px_36px_rgba(0,0,0,0.45)]">
+        <div class="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500/30 via-amber-400 to-amber-500/20"></div>
         <div>
-          <div class="flex items-center justify-between mb-2">
-            <div class="flex items-center gap-2">
-              <span class="w-6 h-6 rounded bg-amber-950 text-amber-400 border border-amber-800 flex items-center justify-center font-bold text-xs">&part;</span>
+          <div class="flex items-center justify-between mb-2.5">
+            <div class="flex items-center gap-2.5">
+              <span class="w-7 h-7 rounded-md bg-amber-950/90 text-amber-400 border border-amber-800/80 flex items-center justify-center shadow-[0_0_12px_rgba(245,158,11,0.2)]">
+                <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i>
+              </span>
               <h2 class="text-sm font-bold text-zinc-100">Faculty Console</h2>
             </div>
-            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-800">k &ge; 5 Audit</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/80 text-amber-400 border border-amber-800/80">k &ge; 5 Audit</span>
           </div>
           <p class="text-[11px] text-zinc-400 mb-4 leading-relaxed">
-            Dedicated institutional console with separate pages for k-Anonymous Concept Telemetry, 5-Slide Remedial Planner, and Split-DB Unlinkability Audit.
+            Departmental analytics suite with dedicated views for k-Anonymous Telemetry, 5-Slide Remedial Planning, and Zero-FK Database Audits.
           </p>
 
           <form id="portal-form-faculty" onsubmit="event.preventDefault();" class="space-y-3">
             <div>
               <label for="portal-input-faculty-email" class="block text-[10px] font-mono text-zinc-400 uppercase tracking-wider mb-1">Faculty Institutional Email</label>
-              <input id="portal-input-faculty-email" type="email" value="prof.sharma@krmangalam.edu.in" class="w-full bg-zinc-950 border border-zinc-800 rounded px-2.5 py-1.5 font-mono text-xs text-zinc-200 outline-none focus:border-amber-500 transition-colors" />
+              <input id="portal-input-faculty-email" type="email" value="prof.sharma@krmangalam.edu.in" class="w-full bg-zinc-950 border border-zinc-800 rounded px-2.5 py-2 font-mono text-xs text-zinc-100 outline-none focus:border-amber-500 transition-colors" />
             </div>
 
             <div class="grid grid-cols-3 gap-2">
               <div class="col-span-2">
                 <label for="portal-input-faculty-passcode" class="block text-[10px] font-mono text-zinc-400 uppercase tracking-wider mb-1">Department Key</label>
-                <input id="portal-input-faculty-passcode" type="password" value="KRMU-FAC-2026" class="w-full bg-zinc-950 border border-zinc-800 rounded px-2.5 py-1.5 font-mono text-xs text-zinc-200 outline-none focus:border-amber-500 transition-colors" />
+                <input id="portal-input-faculty-passcode" type="password" value="KRMU-FAC-2026" class="w-full bg-zinc-950 border border-zinc-800 rounded px-2.5 py-2 font-mono text-xs text-zinc-100 outline-none focus:border-amber-500 transition-colors" />
               </div>
               <div>
                 <label for="portal-select-cohort" class="block text-[10px] font-mono text-zinc-400 uppercase tracking-wider mb-1">Cohort</label>
-                <select id="portal-select-cohort" class="w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-1.5 font-mono text-xs text-zinc-200 outline-none">
+                <select id="portal-select-cohort" class="w-full bg-zinc-950 border border-zinc-800 rounded px-2 py-2 font-mono text-xs text-zinc-100 outline-none focus:border-amber-500">
                   <option value="CSE-1C">CSE-1C</option>
                   <option value="CSE-2A">CSE-2A</option>
                 </select>
               </div>
             </div>
 
-            <button type="button" id="btn-portal-faculty-enter" class="w-full bg-amber-600 hover:bg-amber-500 text-zinc-950 font-bold py-2 rounded text-xs font-mono transition-colors flex items-center justify-center gap-1.5 mt-1 cursor-pointer">
+            <button type="button" id="btn-portal-faculty-enter" class="w-full bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold py-2.5 rounded text-xs font-mono transition-all flex items-center justify-center gap-1.5 shadow-[0_0_20px_rgba(245,158,11,0.22)] mt-1 cursor-pointer">
               <span>Enter Faculty Console &rarr;</span>
             </button>
           </form>
         </div>
 
         <div class="mt-4 pt-3 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
-          <span class="text-zinc-500">Demo Faculty:</span>
-          <button type="button" id="btn-portal-fac-fill" class="text-amber-400 hover:underline font-mono text-[10px] cursor-pointer">
+          <span class="text-zinc-500 font-mono">Demo Faculty:</span>
+          <button type="button" id="btn-portal-fac-fill" class="text-amber-400 hover:text-amber-300 hover:underline font-mono text-[10px] cursor-pointer">
             Quick-Fill Credentials
           </button>
         </div>
-      </div>
+      </section>
 
-      <!-- Card 3: 1v1 Dueling Portal (Server Browser & Matchmaking Lobby) -->
-      <div class="bg-[#111113] border border-zinc-800 hover:border-cyan-700/60 transition-colors rounded-lg p-5 flex flex-col justify-between relative overflow-hidden shadow-xl">
-        <div class="absolute top-0 left-0 right-0 h-1 bg-cyan-500"></div>
+      <!-- Card 3: 1v1 Dueling Portal -->
+      <section class="group bg-[#111113]/95 backdrop-blur-sm border border-zinc-800 hover:border-cyan-600/60 transition-all duration-200 rounded-lg p-5 flex flex-col justify-between relative overflow-hidden shadow-[0_12px_36px_rgba(0,0,0,0.45)]">
+        <div class="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-cyan-500/30 via-cyan-400 to-cyan-500/20"></div>
         <div>
-          <div class="flex items-center justify-between mb-2">
-            <div class="flex items-center gap-2">
-              <span class="w-6 h-6 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 flex items-center justify-center font-bold text-xs">&#9876;</span>
+          <div class="flex items-center justify-between mb-2.5">
+            <div class="flex items-center gap-2.5">
+              <span class="w-7 h-7 rounded-md bg-cyan-950/90 text-cyan-400 border border-cyan-800/80 flex items-center justify-center shadow-[0_0_12px_rgba(6,182,212,0.2)]">
+                <i data-lucide="swords" class="w-3.5 h-3.5"></i>
+              </span>
               <h2 class="text-sm font-bold text-zinc-100">1v1 Dueling Portal</h2>
             </div>
-            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">Lobby &amp; Servers</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950/80 text-cyan-400 border border-cyan-800/80">Server Lobby</span>
           </div>
           <p class="text-[11px] text-zinc-400 mb-4 leading-relaxed">
-            Browse live regional arena servers, pick rulesets (Ranked 180s, Blitz 90s, Sandbox), host or accept open challenges before entering combat.
+            Connect to live regional battle servers, inspect active challengers, host rooms, or configure custom rulesets before entering combat.
           </p>
 
-          <div class="space-y-2 bg-zinc-950 p-3 rounded border border-zinc-800/80 text-[11px] font-mono text-zinc-400 mb-3">
-            <div class="flex items-center justify-between text-zinc-300">
-              <span>IN-KRMU-01 (Campus LAN)</span>
+          <div class="space-y-2 bg-zinc-950/90 p-3 rounded border border-zinc-800/90 text-[11px] font-mono text-zinc-400 mb-3.5">
+            <div class="flex items-center justify-between text-zinc-200">
+              <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_#10B981]"></span>IN-KRMU-01 (Campus)</span>
               <span class="text-emerald-400 text-[10px]">11 ms</span>
             </div>
-            <div class="flex items-center justify-between text-zinc-300">
-              <span>IN-BLR-02 (Speed Blitz)</span>
+            <div class="flex items-center justify-between text-zinc-200">
+              <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_6px_#22D3EE]"></span>IN-BLR-02 (Blitz 90s)</span>
               <span class="text-cyan-400 text-[10px]">28 ms</span>
             </div>
-            <div class="flex items-center justify-between text-zinc-300">
-              <span>AS-SGP-01 (Open Sandbox)</span>
+            <div class="flex items-center justify-between text-zinc-200">
+              <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>AS-SGP-01 (Sandbox)</span>
               <span class="text-amber-400 text-[10px]">54 ms</span>
             </div>
           </div>
 
-          <button type="button" id="btn-portal-arena-enter" class="w-full bg-cyan-600 hover:bg-cyan-500 text-zinc-950 font-bold py-2 rounded text-xs font-mono transition-colors flex items-center justify-center gap-1.5 mt-1 cursor-pointer">
+          <button type="button" id="btn-portal-arena-enter" class="w-full bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-bold py-2.5 rounded text-xs font-mono transition-all flex items-center justify-center gap-1.5 shadow-[0_0_20px_rgba(6,182,212,0.22)] mt-1 cursor-pointer">
             <span>Open Server Browser &amp; Lobby &rarr;</span>
           </button>
         </div>
 
         <div class="mt-4 pt-3 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
-          <span class="text-zinc-500">Matchmaking:</span>
-          <span class="text-cyan-400 font-mono text-[10px]">Custom Rooms + Auto-Pair</span>
+          <span class="text-zinc-500 font-mono">Queue Status:</span>
+          <span class="text-cyan-400 font-mono text-[10px]">3 Nodes Online</span>
         </div>
-      </div>
+      </section>
 
-    </div>
+    </main>
 
-    <!-- Institutional Footer -->
-    <div class="text-center text-[10px] font-mono text-zinc-600 pb-2 shrink-0">
+    <footer class="relative z-10 text-center text-[10px] font-mono text-zinc-600 pb-1 shrink-0">
       K.R. Mangalam University &bull; Dept. of Computer Science &amp; Engineering &bull; Privacy-Preserving Coding Telemetry
-    </div>
+    </footer>
   </div>
 
 
   <!-- ══════════════════════════════════════════════════════════════════════ -->
   <!-- PORTAL 1: DEDICATED STUDENT PORTAL (#portal-student)                   -->
-  <!-- Multi-page architecture: Overview | Practice Lab | Credentials | Rank  -->
   <!-- ══════════════════════════════════════════════════════════════════════ -->
   <div id="portal-student" class="hidden h-screen w-screen flex flex-col overflow-hidden bg-[#09090B]">
-    <!-- Student Top Navigation Bar -->
-    <header class="h-14 border-b border-zinc-800 bg-[#111113] px-4 flex items-center justify-between shrink-0 gap-3">
+    <!-- Sleek Student Header -->
+    <header class="h-14 border-b border-zinc-800 bg-[#111113]/95 backdrop-blur-md px-4 flex items-center justify-between shrink-0 gap-3">
       <div class="flex items-center gap-3 shrink-0">
-        <button type="button" data-exit-portal class="bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700 px-2.5 py-1 rounded text-[11px] font-mono transition-colors cursor-pointer">
-          &larr; Switch Role
+        <button type="button" data-exit-portal class="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-700/80 px-2.5 py-1 rounded text-[11px] font-mono flex items-center gap-1.5 transition-colors cursor-pointer">
+          <i data-lucide="arrow-left" class="w-3 h-3"></i>
+          <span>Portal Gate</span>
         </button>
         <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-          <span class="font-bold text-sm text-zinc-100">CampusGhosts</span>
-          <span class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800">STUDENT PORTAL</span>
+          <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10B981]"></span>
+          <span class="font-bold text-sm text-zinc-100 tracking-tight">CampusGhosts</span>
+          <span class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-950/90 text-emerald-400 border border-emerald-800/80">STUDENT</span>
         </div>
       </div>
 
-      <!-- Dedicated Multi-Page Nav Bar -->
-      <nav aria-label="Student Services" class="flex items-center gap-1.5 font-mono text-[11px]">
-        <button type="button" data-student-page="overview" class="nav-pill active-emerald px-3 py-1.5 rounded border border-transparent transition-colors cursor-pointer">
-          Overview
+      <!-- Segmented Page Nav -->
+      <nav aria-label="Student Pages" class="flex items-center gap-1 bg-zinc-950/90 p-1 rounded-md border border-zinc-800/90 font-mono text-[11px]">
+        <button type="button" data-student-page="overview" class="nav-pill active-emerald px-3 py-1 rounded border border-transparent flex items-center gap-1.5 cursor-pointer">
+          <i data-lucide="layout-dashboard" class="w-3 h-3"></i>
+          <span>Overview</span>
         </button>
-        <button type="button" data-student-page="practice" class="nav-pill text-zinc-400 hover:text-zinc-200 px-3 py-1.5 rounded border border-transparent transition-colors cursor-pointer">
-          Practice Coding Lab
+        <button type="button" data-student-page="practice" class="nav-pill text-zinc-400 hover:text-zinc-200 px-3 py-1 rounded border border-transparent flex items-center gap-1.5 cursor-pointer">
+          <i data-lucide="code-2" class="w-3 h-3"></i>
+          <span>Practice Lab</span>
         </button>
-        <button type="button" data-student-page="credentials" class="nav-pill text-zinc-400 hover:text-zinc-200 px-3 py-1.5 rounded border border-transparent transition-colors cursor-pointer">
-          Placement Vault
+        <button type="button" data-student-page="credentials" class="nav-pill text-zinc-400 hover:text-zinc-200 px-3 py-1 rounded border border-transparent flex items-center gap-1.5 cursor-pointer">
+          <i data-lucide="shield-check" class="w-3 h-3"></i>
+          <span>Placement Vault</span>
         </button>
-        <button type="button" data-student-page="leaderboard" class="nav-pill text-zinc-400 hover:text-zinc-200 px-3 py-1.5 rounded border border-transparent transition-colors cursor-pointer">
-          Leaderboard
+        <button type="button" data-student-page="leaderboard" class="nav-pill text-zinc-400 hover:text-zinc-200 px-3 py-1 rounded border border-transparent flex items-center gap-1.5 cursor-pointer">
+          <i data-lucide="trophy" class="w-3 h-3"></i>
+          <span>Leaderboard</span>
         </button>
       </nav>
 
-      <!-- Active Student Telemetry Pills & Arena Jump -->
+      <!-- Ghost Status Pills & Arena Jump -->
       <div class="flex items-center gap-2 shrink-0 font-mono text-[11px]">
-        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800">
-          <span class="text-zinc-500">Ghost:</span>
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-950 border border-zinc-800">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
           <span id="stu-pill-alias" class="text-emerald-400 font-semibold">Not Anchored</span>
         </div>
-        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800">
-          <span class="text-zinc-500">ELO:</span>
-          <span id="stu-pill-elo" class="text-zinc-200 font-bold">1200</span>
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-950 border border-zinc-800">
+          <span class="text-zinc-500">ELO</span>
+          <span id="stu-pill-elo" class="text-zinc-100 font-bold">1200</span>
         </div>
-        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800">
-          <span class="text-zinc-500">Trust:</span>
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-950 border border-zinc-800">
+          <span class="text-zinc-500">Trust</span>
           <span id="stu-pill-trust" class="text-emerald-400 font-bold">100.0%</span>
         </div>
-        <button type="button" id="btn-student-to-arena" class="bg-cyan-600 hover:bg-cyan-500 text-zinc-950 font-bold px-3 py-1 rounded text-[11px] font-mono transition-colors cursor-pointer">
-          Go to 1v1 Lobby &rarr;
+        <button type="button" id="btn-student-to-arena" class="bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-bold px-3 py-1 rounded text-[11px] font-mono flex items-center gap-1.5 shadow-[0_0_14px_rgba(6,182,212,0.2)] transition-colors cursor-pointer">
+          <i data-lucide="swords" class="w-3 h-3"></i>
+          <span>1v1 Lobby</span>
         </button>
       </div>
     </header>
 
-    <!-- Student Page Content Wrapper -->
     <main class="flex-1 overflow-hidden flex flex-col">
 
       <!-- STUDENT PAGE 1: OVERVIEW DASHBOARD -->
-      <section id="student-page-overview" class="flex-1 overflow-y-auto custom-scroll p-6">
+      <section id="student-page-overview" class="flex-1 overflow-y-auto custom-scroll p-6 bg-dot-matrix">
         <div class="max-w-5xl mx-auto space-y-6">
-          <!-- Cryptographic Identity Summary Card -->
-          <div class="bg-[#111113] border border-zinc-800 rounded-lg p-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div class="space-y-1">
-              <div class="text-[10px] font-mono uppercase tracking-wider text-emerald-400">Zero-Knowledge Student Session Active</div>
-              <h2 class="text-lg font-bold text-zinc-100 flex items-center gap-2">
-                Welcome, <span id="stu-dash-alias" class="font-mono text-emerald-400">Cipher_00</span>
+          <!-- Cryptographic Identity Banner -->
+          <div class="bg-[#111113]/95 border border-zinc-800 rounded-lg p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative overflow-hidden shadow-xl">
+            <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-500 via-emerald-400 to-cyan-500"></div>
+            <div class="space-y-1.5">
+              <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-950/80 border border-emerald-800/70 text-[10px] font-mono text-emerald-400">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span>ZK COMMITMENT ACTIVE</span>
+              </div>
+              <h2 class="text-xl font-bold text-zinc-50">
+                Welcome back, <span id="stu-dash-alias" class="font-mono text-emerald-400">Cipher_00</span>
               </h2>
               <p class="text-[11px] text-zinc-400 font-mono">
-                Commitment Hash: <span id="stu-dash-hash" class="text-zinc-300">Not anchored yet</span>
+                SHA-256 Digest: <span id="stu-dash-hash" class="text-zinc-200 bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800">Not anchored</span>
               </p>
             </div>
             <div class="flex items-center gap-3 font-mono">
-              <div class="bg-zinc-950 border border-zinc-800 rounded px-4 py-2.5 text-center">
-                <div class="text-[10px] text-zinc-500 uppercase">Current ELO</div>
-                <div id="stu-dash-elo" class="text-lg font-bold text-zinc-100">1200</div>
+              <div class="bg-zinc-950/90 border border-zinc-800 rounded-md px-4 py-2.5 text-center min-w-[96px]">
+                <div class="text-[10px] text-zinc-500 uppercase">ELO Rating</div>
+                <div id="stu-dash-elo" class="text-lg font-bold text-zinc-100 mt-0.5">1200</div>
               </div>
-              <div class="bg-zinc-950 border border-zinc-800 rounded px-4 py-2.5 text-center">
-                <div class="text-[10px] text-zinc-500 uppercase">Human Trust</div>
-                <div id="stu-dash-trust" class="text-lg font-bold text-emerald-400">100.0%</div>
+              <div class="bg-zinc-950/90 border border-zinc-800 rounded-md px-4 py-2.5 text-center min-w-[96px]">
+                <div class="text-[10px] text-zinc-500 uppercase">Trust Score</div>
+                <div id="stu-dash-trust" class="text-lg font-bold text-emerald-400 mt-0.5">100.0%</div>
               </div>
-              <div class="bg-zinc-950 border border-zinc-800 rounded px-4 py-2.5 text-center">
+              <div class="bg-zinc-950/90 border border-zinc-800 rounded-md px-4 py-2.5 text-center min-w-[96px]">
                 <div class="text-[10px] text-zinc-500 uppercase">Challenges</div>
-                <div class="text-lg font-bold text-cyan-400">5</div>
+                <div class="text-lg font-bold text-cyan-400 mt-0.5">5</div>
               </div>
             </div>
           </div>
 
-          <!-- Separate Service Navigation Cards -->
+          <!-- Launchpad Grid -->
           <div>
-            <h3 class="text-xs font-mono uppercase tracking-wider text-zinc-400 mb-3">Student Workspace Services</h3>
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-[11px] font-mono uppercase tracking-wider text-zinc-400 font-semibold">Student Workspace Modules</h3>
+              <span class="text-[10px] font-mono text-zinc-500">Zero identity telemetry leaked across practice attempts</span>
+            </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <!-- Service 1 -->
-              <div class="bg-[#111113] border border-zinc-800 hover:border-emerald-700/70 rounded-lg p-5 flex flex-col justify-between transition-colors">
+              <!-- Practice Lab Card -->
+              <div class="bg-[#111113] border border-zinc-800 hover:border-emerald-600/60 rounded-lg p-5 flex flex-col justify-between transition-all shadow-lg">
                 <div>
                   <div class="flex items-center justify-between mb-2">
-                    <h4 class="text-sm font-bold text-zinc-100">Solo Practice Coding Lab</h4>
-                    <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-950 text-emerald-400 border border-emerald-800">Unclocked Practice</span>
+                    <div class="flex items-center gap-2">
+                      <span class="w-7 h-7 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center justify-center"><i data-lucide="code-2" class="w-3.5 h-3.5"></i></span>
+                      <h4 class="text-sm font-bold text-zinc-100">Solo Practice Coding Lab</h4>
+                    </div>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-950 text-emerald-400 border border-emerald-800">Unclocked</span>
                   </div>
                   <p class="text-xs text-zinc-400 leading-relaxed mb-4">
-                    Write C++ and Python solutions on a clean, full-width editor without rival distraction. Run real test verification and receive Socratic AI coaching on memory bounds and invariants.
+                    Dedicated full-screen coding IDE to master array boundaries, pointer safety, recursion guards, and loop invariants with instant AI Socratic hints.
                   </p>
                 </div>
-                <button type="button" data-student-page-jump="practice" class="self-start bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold px-3.5 py-1.5 rounded text-xs font-mono transition-colors cursor-pointer">
+                <button type="button" data-student-page-jump="practice" class="self-start bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold px-3.5 py-1.5 rounded text-xs font-mono transition-colors cursor-pointer">
                   Open Practice Lab &rarr;
                 </button>
               </div>
 
-              <!-- Service 2 -->
-              <div class="bg-[#111113] border border-zinc-800 hover:border-cyan-700/70 rounded-lg p-5 flex flex-col justify-between transition-colors">
+              <!-- 1v1 Dueling Lobby Card -->
+              <div class="bg-[#111113] border border-zinc-800 hover:border-cyan-600/60 rounded-lg p-5 flex flex-col justify-between transition-all shadow-lg">
                 <div>
                   <div class="flex items-center justify-between mb-2">
-                    <h4 class="text-sm font-bold text-zinc-100">1v1 Dueling Arena &amp; Server Browser</h4>
-                    <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-800">Competitive ELO</span>
+                    <div class="flex items-center gap-2">
+                      <span class="w-7 h-7 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 flex items-center justify-center"><i data-lucide="swords" class="w-3.5 h-3.5"></i></span>
+                      <h4 class="text-sm font-bold text-zinc-100">1v1 Dueling Arena Lobby</h4>
+                    </div>
+                    <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-800">Live Servers</span>
                   </div>
                   <p class="text-xs text-zinc-400 leading-relaxed mb-4">
-                    Connect to regional CampusGhosts arena servers, inspect waiting ghost challengers, create a match room, or queue for ranked 1v1 duels with anti-cheat enforcement.
+                    Browse active server nodes, accept open challenges from cohort peers, host rooms, or queue for timed ranked matches.
                   </p>
                 </div>
-                <button type="button" id="btn-overview-to-arena" class="self-start bg-cyan-600 hover:bg-cyan-500 text-zinc-950 font-bold px-3.5 py-1.5 rounded text-xs font-mono transition-colors cursor-pointer">
+                <button type="button" id="btn-overview-to-arena" class="self-start bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-bold px-3.5 py-1.5 rounded text-xs font-mono transition-colors cursor-pointer">
                   Enter Server Browser &rarr;
                 </button>
               </div>
 
-              <!-- Service 3 -->
-              <div class="bg-[#111113] border border-zinc-800 hover:border-zinc-700 rounded-lg p-5 flex flex-col justify-between transition-colors">
+              <!-- Placement Credentials Card -->
+              <div class="bg-[#111113] border border-zinc-800 hover:border-zinc-600 rounded-lg p-5 flex flex-col justify-between transition-all shadow-lg">
                 <div>
                   <div class="flex items-center justify-between mb-2">
-                    <h4 class="text-sm font-bold text-zinc-100">Placement Credential Vault</h4>
+                    <div class="flex items-center gap-2">
+                      <span class="w-7 h-7 rounded bg-zinc-900 text-zinc-200 border border-zinc-700 flex items-center justify-center"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i></span>
+                      <h4 class="text-sm font-bold text-zinc-100">Placement Credential Vault</h4>
+                    </div>
                     <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-zinc-900 text-zinc-300 border border-zinc-700">HMAC-SHA256</span>
                   </div>
                   <p class="text-xs text-zinc-400 leading-relaxed mb-4">
-                    Prove cryptographic ownership of your Ghost Alias and ELO rank to placement recruiters without ever exposing failed attempts or practice history.
+                    Mint cryptographically signed ELO &amp; cohort rank verification tokens for technical recruiters without exposing private practice history.
                   </p>
                 </div>
                 <button type="button" data-student-page-jump="credentials" class="self-start bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700 font-semibold px-3.5 py-1.5 rounded text-xs font-mono transition-colors cursor-pointer">
@@ -388,19 +450,22 @@
                 </button>
               </div>
 
-              <!-- Service 4 -->
-              <div class="bg-[#111113] border border-zinc-800 hover:border-zinc-700 rounded-lg p-5 flex flex-col justify-between transition-colors">
+              <!-- Cohort Leaderboard Card -->
+              <div class="bg-[#111113] border border-zinc-800 hover:border-zinc-600 rounded-lg p-5 flex flex-col justify-between transition-all shadow-lg">
                 <div>
                   <div class="flex items-center justify-between mb-2">
-                    <h4 class="text-sm font-bold text-zinc-100">Anonymized Cohort Leaderboard</h4>
+                    <div class="flex items-center gap-2">
+                      <span class="w-7 h-7 rounded bg-zinc-900 text-amber-400 border border-zinc-700 flex items-center justify-center"><i data-lucide="trophy" class="w-3.5 h-3.5"></i></span>
+                      <h4 class="text-sm font-bold text-zinc-100">Anonymized Cohort Leaderboard</h4>
+                    </div>
                     <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-zinc-900 text-zinc-300 border border-zinc-700">Top 10</span>
                   </div>
                   <p class="text-xs text-zinc-400 leading-relaxed mb-4">
-                    Inspect live institutional Ghost ELO standings across your department cohort. Roll numbers remain mathematically stripped from every leaderboard record.
+                    Check live cohort Ghost rankings ordered by verified ELO rating and behavioral Anti-Cheat trust scores.
                   </p>
                 </div>
                 <button type="button" data-student-page-jump="leaderboard" class="self-start bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700 font-semibold px-3.5 py-1.5 rounded text-xs font-mono transition-colors cursor-pointer">
-                  View Cohort Standings &rarr;
+                  View Standings &rarr;
                 </button>
               </div>
             </div>
@@ -410,18 +475,18 @@
 
       <!-- STUDENT PAGE 2: SOLO PRACTICE CODING LAB -->
       <section id="student-page-practice" class="hidden flex-1 flex flex-col overflow-hidden">
-        <!-- Practice Toolbar -->
+        <!-- Practice IDE Toolbar -->
         <div class="h-11 border-b border-zinc-800 bg-[#111113] px-4 flex items-center justify-between shrink-0 gap-3">
           <div class="flex items-center gap-2.5">
             <label for="practice-select-problem" class="font-mono text-[11px] text-zinc-400">Challenge:</label>
-            <select id="practice-select-problem" class="bg-zinc-900 border border-zinc-800 text-zinc-200 rounded px-2.5 py-1 text-xs font-mono outline-none font-semibold">
+            <select id="practice-select-problem" class="bg-zinc-950 border border-zinc-800 text-zinc-100 rounded px-2.5 py-1 text-xs font-mono outline-none font-semibold">
               <option value="arr-bound">1. Bounded Array Sum</option>
               <option value="ptr-swap">2. Safe Pointer Swap</option>
               <option value="loop-converge">3. Collatz Loop Invariant</option>
               <option value="rec-fact">4. Guarded Recursion</option>
               <option value="str-palindrome">5. Two-Pointer Palindrome</option>
             </select>
-            <select id="practice-select-language" class="bg-zinc-900 border border-zinc-800 text-zinc-300 rounded px-2.5 py-1 text-xs font-mono outline-none">
+            <select id="practice-select-language" class="bg-zinc-950 border border-zinc-800 text-zinc-300 rounded px-2.5 py-1 text-xs font-mono outline-none">
               <option value="cpp">C++ (GCC 15)</option>
               <option value="python">Python 3.14</option>
             </select>
@@ -429,25 +494,35 @@
 
           <div class="flex items-center gap-2">
             <button type="button" id="btn-practice-reset" class="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-cyan-400 px-2.5 py-1 rounded text-[11px] font-mono cursor-pointer">Reset Starter</button>
-            <button type="button" id="btn-practice-buggy" class="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-amber-400 px-2.5 py-1 rounded text-[11px] font-mono cursor-pointer">Load Buggy Sample</button>
-            <button type="button" id="btn-practice-clean" class="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-emerald-400 px-2.5 py-1 rounded text-[11px] font-mono cursor-pointer">Load Solution</button>
-            <button type="button" id="btn-practice-submit" class="bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold px-4 py-1 rounded text-xs font-mono transition-colors cursor-pointer">Run &amp; Evaluate</button>
+            <button type="button" id="btn-practice-buggy" class="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-amber-400 px-2.5 py-1 rounded text-[11px] font-mono cursor-pointer">Buggy Sample</button>
+            <button type="button" id="btn-practice-clean" class="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-emerald-400 px-2.5 py-1 rounded text-[11px] font-mono cursor-pointer">Solution</button>
+            <button type="button" id="btn-practice-submit" class="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold px-4 py-1 rounded text-xs font-mono flex items-center gap-1.5 shadow-[0_0_15px_rgba(16,185,129,0.2)] transition-colors cursor-pointer">
+              <i data-lucide="play" class="w-3 h-3"></i>
+              <span>Run &amp; Evaluate</span>
+            </button>
           </div>
         </div>
 
-        <!-- Practice Split: Left Editor (62%) | Right Spec & AI Coach (38%) -->
+        <!-- Practice Split IDE -->
         <div class="flex-1 flex overflow-hidden">
+          <!-- Left: Code Pane with Line Gutter -->
           <div class="w-3/5 border-r border-zinc-800 flex flex-col bg-[#0C0C0E]">
-            <div class="h-7 bg-zinc-900/70 border-b border-zinc-800 px-3 flex items-center justify-between font-mono text-[10px] text-zinc-400">
-              <span>Solo Practice Editor &bull; Paste Guarded</span>
-              <span id="practice-editor-stats" class="text-emerald-400">Ready</span>
+            <div class="h-8 bg-zinc-900/70 border-b border-zinc-800 px-3 flex items-center justify-between font-mono text-[10px] text-zinc-400">
+              <div class="flex items-center gap-2">
+                <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-zinc-700"></span><span class="w-2 h-2 rounded-full bg-zinc-700"></span><span class="w-2 h-2 rounded-full bg-emerald-500"></span></span>
+                <span id="practice-file-tab" class="text-zinc-200 font-semibold ml-1">solution.cpp</span>
+              </div>
+              <span id="practice-editor-stats" class="text-emerald-400">Paste Guarded &bull; Ready</span>
             </div>
-            <textarea id="editor-practice-student" spellcheck="false" autocomplete="off" class="flex-1 w-full bg-transparent text-zinc-200 font-mono text-xs p-4 outline-none resize-none custom-scroll leading-relaxed" placeholder="// Write your C++ or Python implementation here..."></textarea>
+            <div class="flex-1 flex overflow-hidden">
+              <pre id="practice-gutter" aria-hidden="true" class="w-10 py-4 px-2 text-right font-mono text-xs text-zinc-600 bg-[#0A0A0C] border-r border-zinc-900 select-none overflow-hidden leading-relaxed">1</pre>
+              <textarea id="editor-practice-student" spellcheck="false" autocomplete="off" class="editor-surface flex-1 w-full bg-transparent text-zinc-100 font-mono text-xs p-4 outline-none resize-none custom-scroll leading-relaxed" placeholder="// Write your C++ or Python implementation here..."></textarea>
+            </div>
           </div>
 
+          <!-- Right: Specification & Socratic AI Coach -->
           <div class="w-2/5 flex flex-col bg-[#09090B] p-4 overflow-y-auto custom-scroll space-y-4">
-            <!-- Problem Spec Card -->
-            <div class="bg-[#111113] border border-zinc-800 rounded-lg p-4 space-y-2">
+            <div class="bg-[#111113] border border-zinc-800 rounded-lg p-4 space-y-2 shadow-md">
               <div class="flex items-center justify-between">
                 <h3 id="practice-prob-title" class="text-sm font-bold text-zinc-100">Bounded Array Sum</h3>
                 <span id="practice-prob-badge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-950 text-amber-400 border border-amber-800">ARRAY_OUT_OF_BOUNDS &bull; Easy</span>
@@ -457,35 +532,37 @@
               </p>
             </div>
 
-            <!-- AI Socratic Diagnostic Card -->
-            <div class="bg-[#111113] border border-zinc-800 rounded-lg p-4 space-y-3 flex-1 flex flex-col">
-              <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
-                <span class="font-mono text-xs font-bold text-zinc-200">AI Socratic Practice Coach</span>
+            <div class="bg-[#111113] border border-zinc-800 rounded-lg p-4 space-y-3 flex-1 flex flex-col shadow-md">
+              <div class="flex items-center justify-between border-b border-zinc-800 pb-2.5">
+                <span class="font-mono text-xs font-bold text-zinc-100 flex items-center gap-1.5">
+                  <i data-lucide="sparkles" class="w-3.5 h-3.5 text-emerald-400"></i>
+                  <span>AI Socratic Practice Coach</span>
+                </span>
                 <span id="practice-diag-tag" class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-zinc-800 text-zinc-400">IDLE</span>
               </div>
 
               <div class="grid grid-cols-3 gap-2 font-mono text-[10px]">
-                <div class="bg-zinc-950 border border-zinc-800 rounded p-2">
+                <div class="bg-zinc-950 border border-zinc-800 rounded p-2.5">
                   <span class="text-zinc-500 block">Runtime</span>
-                  <strong id="practice-diag-time" class="text-zinc-200">-- ms</strong>
+                  <strong id="practice-diag-time" class="text-zinc-100 text-xs">-- ms</strong>
                 </div>
-                <div class="bg-zinc-950 border border-zinc-800 rounded p-2">
+                <div class="bg-zinc-950 border border-zinc-800 rounded p-2.5">
                   <span class="text-zinc-500 block">Memory</span>
-                  <strong id="practice-diag-mem" class="text-zinc-200">-- KB</strong>
+                  <strong id="practice-diag-mem" class="text-zinc-100 text-xs">-- KB</strong>
                 </div>
-                <div class="bg-zinc-950 border border-zinc-800 rounded p-2">
+                <div class="bg-zinc-950 border border-zinc-800 rounded p-2.5">
                   <span class="text-zinc-500 block">ELO Impact</span>
-                  <strong id="practice-diag-delta" class="text-emerald-400">0</strong>
+                  <strong id="practice-diag-delta" class="text-emerald-400 text-xs">0</strong>
                 </div>
               </div>
 
-              <div class="bg-zinc-950 border border-zinc-800/80 rounded p-3 text-xs font-mono text-zinc-300 leading-relaxed">
-                <p id="practice-diag-hint">Select a problem and click "Run &amp; Evaluate" to test your solution against dynamic assertions and invariant rules.</p>
+              <div class="bg-zinc-950 border border-zinc-800/90 rounded p-3 text-xs font-mono text-zinc-200 leading-relaxed">
+                <p id="practice-diag-hint">Select a problem and click "Run &amp; Evaluate" to test your solution against dynamic assertions.</p>
               </div>
 
               <div class="flex-1 flex flex-col">
-                <span class="text-[10px] font-mono text-zinc-500 mb-1">Execution &amp; Diagnostic Trace</span>
-                <pre id="practice-diag-log" class="flex-1 bg-zinc-950 border border-zinc-800 rounded p-2.5 text-[10px] font-mono text-zinc-400 whitespace-pre-wrap overflow-y-auto custom-scroll">Standby — waiting for code execution...</pre>
+                <span class="text-[10px] font-mono text-zinc-500 uppercase tracking-wider mb-1.5">Compiler &amp; Assertion Trace</span>
+                <pre id="practice-diag-log" class="flex-1 bg-[#070709] border border-zinc-800/90 rounded p-3 text-[10px] font-mono text-zinc-400 whitespace-pre-wrap overflow-y-auto custom-scroll">Standby — waiting for code execution...</pre>
               </div>
             </div>
           </div>
@@ -493,34 +570,35 @@
       </section>
 
       <!-- STUDENT PAGE 3: ZK PLACEMENT CREDENTIALS VAULT -->
-      <section id="student-page-credentials" class="hidden flex-1 overflow-y-auto custom-scroll p-6">
-        <div class="max-w-3xl mx-auto space-y-5">
-          <div class="bg-[#111113] p-6 rounded-lg border border-zinc-800 space-y-4">
-            <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+      <section id="student-page-credentials" class="hidden flex-1 overflow-y-auto custom-scroll p-6 bg-dot-matrix">
+        <div class="max-w-3xl mx-auto">
+          <div class="bg-[#111113] p-6 rounded-lg border border-zinc-800 space-y-4 relative overflow-hidden shadow-xl">
+            <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-500 to-cyan-500"></div>
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-3.5">
               <div>
                 <h2 class="font-bold text-zinc-100 text-base flex items-center gap-2">
-                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                  Zero-Knowledge Placement Credential Audit
+                  <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+                  <span>Zero-Knowledge Placement Credential Vault</span>
                 </h2>
                 <p class="text-xs text-zinc-400 mt-1">
-                  Cryptographically prove ownership of your Top-Rank Ghost Alias and ELO to recruiters without leaking early practice failures.
+                  Cryptographically verify Ghost Alias &amp; ELO ownership for technical recruiters without leaking early practice failures.
                 </p>
               </div>
-              <span class="px-2.5 py-1 rounded text-[10px] font-mono bg-emerald-950 text-emerald-400 border border-emerald-800">SHA-256 + HMAC</span>
+              <span class="px-2.5 py-1 rounded text-[10px] font-mono bg-emerald-950 text-emerald-400 border border-emerald-800">HMAC-SHA256</span>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label for="claim-roll-no" class="block text-[10px] font-mono uppercase text-zinc-400 mb-1">Student Roll Number</label>
-                <input id="claim-roll-no" type="text" placeholder="e.g. 2601010043" class="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 font-mono text-xs text-zinc-200 outline-none focus:border-emerald-500" />
+                <input id="claim-roll-no" type="text" placeholder="e.g. 2601010043" class="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 font-mono text-xs text-zinc-100 outline-none focus:border-emerald-500" />
               </div>
               <div>
                 <label for="claim-secret-salt" class="block text-[10px] font-mono uppercase text-zinc-400 mb-1">Private Secret Salt</label>
-                <input id="claim-secret-salt" type="password" placeholder="Private secret salt" class="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 font-mono text-xs text-zinc-200 outline-none focus:border-emerald-500" />
+                <input id="claim-secret-salt" type="password" placeholder="Private secret salt" class="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 font-mono text-xs text-zinc-100 outline-none focus:border-emerald-500" />
               </div>
             </div>
 
-            <button type="button" id="btn-verify-claim" class="bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold px-5 py-2 rounded text-xs font-mono transition-colors cursor-pointer">
+            <button type="button" id="btn-verify-claim" class="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold px-5 py-2 rounded text-xs font-mono transition-colors shadow-[0_0_16px_rgba(16,185,129,0.2)] cursor-pointer">
               Generate &amp; Verify Placement Certificate
             </button>
 
@@ -530,13 +608,13 @@
       </section>
 
       <!-- STUDENT PAGE 4: COHORT LEADERBOARD -->
-      <section id="student-page-leaderboard" class="hidden flex-1 overflow-y-auto custom-scroll p-6">
-        <div class="max-w-4xl mx-auto space-y-4">
-          <div class="bg-[#111113] rounded-lg border border-zinc-800 overflow-hidden">
-            <div class="bg-zinc-900 px-4 py-3 border-b border-zinc-800 font-mono text-xs font-bold text-zinc-200 flex items-center justify-between">
-              <span>Top-10 Cohort Ghost Leaderboard (Identity-Stripped)</span>
-              <button type="button" id="btn-refresh-leaderboard" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-2.5 py-1 rounded text-[11px] font-mono cursor-pointer">
-                Refresh Standings
+      <section id="student-page-leaderboard" class="hidden flex-1 overflow-y-auto custom-scroll p-6 bg-dot-matrix">
+        <div class="max-w-4xl mx-auto">
+          <div class="bg-[#111113] rounded-lg border border-zinc-800 overflow-hidden shadow-xl">
+            <div class="bg-zinc-900/90 px-4 py-3 border-b border-zinc-800 font-mono text-xs font-bold text-zinc-100 flex items-center justify-between">
+              <span class="flex items-center gap-2"><i data-lucide="trophy" class="w-3.5 h-3.5 text-amber-400"></i>Top-10 Cohort Ghost Leaderboard (Identity-Stripped)</span>
+              <button type="button" id="btn-refresh-leaderboard" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-2.5 py-1 rounded text-[11px] font-mono cursor-pointer">
+                Refresh
               </button>
             </div>
             <table class="w-full text-left font-mono text-xs">
@@ -555,89 +633,103 @@
           </div>
         </div>
       </section>
-
     </main>
   </div>
 
 
   <!-- ══════════════════════════════════════════════════════════════════════ -->
   <!-- PORTAL 2: DEDICATED FACULTY CONSOLE (#portal-faculty)                  -->
-  <!-- Separate 3-page faculty portal: Telemetry | Remedial Plans | DB Audit  -->
   <!-- ══════════════════════════════════════════════════════════════════════ -->
   <div id="portal-faculty" class="hidden h-screen w-screen flex flex-col overflow-hidden bg-[#09090B]">
-    <!-- Faculty Header -->
-    <header class="h-14 border-b border-zinc-800 bg-[#111113] px-4 flex items-center justify-between shrink-0 gap-3">
+    <header class="h-14 border-b border-zinc-800 bg-[#111113]/95 backdrop-blur-md px-4 flex items-center justify-between shrink-0 gap-3">
       <div class="flex items-center gap-3 shrink-0">
-        <button type="button" data-exit-portal class="bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700 px-2.5 py-1 rounded text-[11px] font-mono transition-colors cursor-pointer">
-          &larr; Switch Role
+        <button type="button" data-exit-portal class="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-700/80 px-2.5 py-1 rounded text-[11px] font-mono flex items-center gap-1.5 transition-colors cursor-pointer">
+          <i data-lucide="arrow-left" class="w-3 h-3"></i>
+          <span>Portal Gate</span>
         </button>
         <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+          <span class="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_#F59E0B]"></span>
           <span class="font-bold text-sm text-zinc-100">CampusGhosts</span>
-          <span class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-amber-950 text-amber-400 border border-amber-800">FACULTY CONSOLE</span>
+          <span class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-amber-950/90 text-amber-400 border border-amber-800/80">FACULTY</span>
         </div>
       </div>
 
-      <!-- Faculty Page Nav -->
-      <nav aria-label="Faculty Console Pages" class="flex items-center gap-1.5 font-mono text-[11px]">
-        <button type="button" data-faculty-page="telemetry" class="nav-pill active-amber px-3 py-1.5 rounded border border-transparent transition-colors cursor-pointer">
-          1. k-Anonymous Telemetry
+      <nav aria-label="Faculty Console Pages" class="flex items-center gap-1 bg-zinc-950/90 p-1 rounded-md border border-zinc-800/90 font-mono text-[11px]">
+        <button type="button" data-faculty-page="telemetry" class="nav-pill active-amber px-3 py-1 rounded border border-transparent flex items-center gap-1.5 cursor-pointer">
+          <i data-lucide="bar-chart-3" class="w-3 h-3"></i>
+          <span>1. Telemetry Heatmap</span>
         </button>
-        <button type="button" data-faculty-page="remedial" class="nav-pill text-zinc-400 hover:text-zinc-200 px-3 py-1.5 rounded border border-transparent transition-colors cursor-pointer">
-          2. Remedial Lecture Planner
+        <button type="button" data-faculty-page="remedial" class="nav-pill text-zinc-400 hover:text-zinc-200 px-3 py-1 rounded border border-transparent flex items-center gap-1.5 cursor-pointer">
+          <i data-lucide="presentation" class="w-3 h-3"></i>
+          <span>2. Remedial Planner</span>
         </button>
-        <button type="button" data-faculty-page="audit" class="nav-pill text-zinc-400 hover:text-zinc-200 px-3 py-1.5 rounded border border-transparent transition-colors cursor-pointer">
-          3. DB Unlinkability Audit
+        <button type="button" data-faculty-page="audit" class="nav-pill text-zinc-400 hover:text-zinc-200 px-3 py-1 rounded border border-transparent flex items-center gap-1.5 cursor-pointer">
+          <i data-lucide="database" class="w-3 h-3"></i>
+          <span>3. DB Unlinkability Audit</span>
         </button>
       </nav>
 
-      <!-- Faculty Session Info -->
       <div class="flex items-center gap-2 shrink-0 font-mono text-[11px]">
-        <span id="fac-header-user" class="px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800 text-amber-400 font-semibold">Prof. Sharma &bull; CSE-1C</span>
-        <span class="px-2.5 py-1 rounded bg-emerald-950/60 border border-emerald-800/60 text-emerald-400 text-[10px]">Privacy: k &ge; 5</span>
+        <span id="fac-header-user" class="px-2.5 py-1 rounded bg-zinc-950 border border-zinc-800 text-amber-400 font-semibold">Prof. Sharma &bull; CSE-1C</span>
+        <span class="px-2.5 py-1 rounded bg-emerald-950/70 border border-emerald-800/70 text-emerald-400 text-[10px]">k &ge; 5 Active</span>
       </div>
     </header>
 
-    <!-- Faculty Pages Container -->
     <main class="flex-1 overflow-hidden flex flex-col">
 
-      <!-- FACULTY PAGE 1: k-ANONYMOUS TELEMETRY HEATMAP -->
-      <section id="faculty-page-telemetry" class="flex-1 overflow-y-auto custom-scroll p-6">
+      <!-- FACULTY PAGE 1: k-ANONYMOUS TELEMETRY -->
+      <section id="faculty-page-telemetry" class="flex-1 overflow-y-auto custom-scroll p-6 bg-dot-matrix">
         <div class="max-w-5xl mx-auto space-y-5">
-          <!-- Control Bar -->
+          <!-- KPI Row -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono">
+            <div class="bg-[#111113] border border-zinc-800 rounded-lg p-4">
+              <div class="text-[10px] text-zinc-500 uppercase">Monitored Clusters</div>
+              <div id="fac-kpi-clusters" class="text-xl font-bold text-zinc-100 mt-1">--</div>
+            </div>
+            <div class="bg-[#111113] border border-zinc-800 rounded-lg p-4">
+              <div class="text-[10px] text-zinc-500 uppercase">k &lt; 5 Privacy Shielded</div>
+              <div id="fac-kpi-masked" class="text-xl font-bold text-emerald-400 mt-1">--</div>
+            </div>
+            <div class="bg-[#111113] border border-zinc-800 rounded-lg p-4">
+              <div class="text-[10px] text-zinc-500 uppercase">Primary Bottleneck</div>
+              <div id="fac-kpi-top-tag" class="text-sm font-bold text-amber-400 mt-1.5 truncate">--</div>
+            </div>
+          </div>
+
+          <!-- Controls -->
           <div class="flex items-center justify-between bg-[#111113] p-3.5 rounded-lg border border-zinc-800 gap-3 flex-wrap">
             <div class="flex items-center gap-3">
               <span class="font-mono text-xs text-zinc-400">Disclosure Policy:</span>
-              <button type="button" id="btn-toggle-telemetry-mode" class="bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold px-3 py-1.5 rounded text-xs font-mono transition-colors cursor-pointer">
+              <button type="button" id="btn-toggle-telemetry-mode" class="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold px-3 py-1.5 rounded text-xs font-mono transition-colors cursor-pointer">
                 Safe View (k &ge; 5 Masked)
               </button>
               <span id="telemetry-mode-desc" class="text-[11px] font-mono text-zinc-400">Clusters &lt; 5 ghosts are mathematically masked</span>
             </div>
 
             <div class="flex items-center gap-2">
-              <button type="button" id="btn-refresh-heatmap" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3 py-1.5 rounded text-xs font-mono cursor-pointer">
-                Refresh Data
+              <button type="button" id="btn-refresh-heatmap" class="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 px-3 py-1.5 rounded text-xs font-mono cursor-pointer">
+                Refresh
               </button>
-              <button type="button" id="btn-goto-remedial" class="bg-amber-600 hover:bg-amber-500 text-zinc-950 font-bold px-3 py-1.5 rounded text-xs font-mono cursor-pointer">
-                Open Remedial Planner &rarr;
+              <button type="button" id="btn-goto-remedial" class="bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold px-3 py-1.5 rounded text-xs font-mono cursor-pointer">
+                Remedial Planner &rarr;
               </button>
             </div>
           </div>
 
-          <!-- Chart.js Full-Width Container -->
-          <div class="bg-[#111113] p-5 rounded-lg border border-zinc-800">
+          <!-- Chart -->
+          <div class="bg-[#111113] p-5 rounded-lg border border-zinc-800 shadow-lg">
             <div class="flex items-center justify-between mb-3">
               <h2 class="text-sm font-bold text-zinc-100">Cohort Concept Failure Distribution (Distinct Ghosts)</h2>
-              <span class="text-[11px] font-mono text-zinc-500">Click any bar to jump to its remedial plan</span>
+              <span class="text-[11px] font-mono text-zinc-500">Click any bar to launch remedial lecture plan</span>
             </div>
-            <div class="h-72">
+            <div class="h-64">
               <canvas id="canvas-heatmap"></canvas>
             </div>
           </div>
 
           <!-- Cluster Breakdown Table -->
-          <div class="bg-[#111113] rounded-lg border border-zinc-800 overflow-hidden">
-            <div class="bg-zinc-900 px-4 py-2.5 border-b border-zinc-800 font-mono text-xs font-bold text-zinc-200">
+          <div class="bg-[#111113] rounded-lg border border-zinc-800 overflow-hidden shadow-lg">
+            <div class="bg-zinc-900/90 px-4 py-2.5 border-b border-zinc-800 font-mono text-xs font-bold text-zinc-200">
               Differential Telemetry Cluster Breakdown
             </div>
             <table class="w-full text-left font-mono text-xs">
@@ -657,16 +749,16 @@
         </div>
       </section>
 
-      <!-- FACULTY PAGE 2: AUTOMATED REMEDIAL LECTURE PLANNER -->
-      <section id="faculty-page-remedial" class="hidden flex-1 overflow-y-auto custom-scroll p-6">
+      <!-- FACULTY PAGE 2: REMEDIAL LECTURE PLANNER -->
+      <section id="faculty-page-remedial" class="hidden flex-1 overflow-y-auto custom-scroll p-6 bg-dot-matrix">
         <div class="max-w-5xl mx-auto space-y-5">
           <div class="bg-[#111113] p-4 rounded-lg border border-zinc-800 flex items-center justify-between gap-4 flex-wrap">
             <div>
               <h2 class="text-sm font-bold text-zinc-100">Automated 10-Minute Remedial Micro-Lecture Generator</h2>
-              <p class="text-[11px] text-zinc-400 font-mono mt-0.5">Select any bottleneck concept cluster to synthesize targeted slides and viva questions.</p>
+              <p class="text-[11px] text-zinc-400 font-mono mt-0.5">Synthesizes 5 targeted teaching slides and 3 viva examination prompts from anonymized telemetry.</p>
             </div>
             <div class="flex items-center gap-2">
-              <select id="select-remedial-concept" class="bg-zinc-900 border border-zinc-800 text-zinc-200 rounded px-3 py-1.5 text-xs font-mono outline-none">
+              <select id="select-remedial-concept" class="bg-zinc-950 border border-zinc-800 text-zinc-100 rounded px-3 py-1.5 text-xs font-mono outline-none">
                 <option value="ARRAY_OUT_OF_BOUNDS">ARRAY_OUT_OF_BOUNDS</option>
                 <option value="POINTER_DEREF_NULL">POINTER_DEREF_NULL</option>
                 <option value="LOOP_INFINITE_BOUND">LOOP_INFINITE_BOUND</option>
@@ -674,23 +766,20 @@
                 <option value="LOGIC_INCORRECT">LOGIC_INCORRECT</option>
                 <option value="SYNTAX_ERROR">SYNTAX_ERROR</option>
               </select>
-              <button type="button" id="btn-remedial-plan" class="bg-amber-600 hover:bg-amber-500 text-zinc-950 font-bold px-4 py-1.5 rounded text-xs font-mono transition-colors cursor-pointer">
+              <button type="button" id="btn-remedial-plan" class="bg-amber-500 hover:bg-amber-400 text-zinc-950 font-bold px-4 py-1.5 rounded text-xs font-mono transition-colors shadow-[0_0_14px_rgba(245,158,11,0.2)] cursor-pointer">
                 Generate Plan
               </button>
             </div>
           </div>
 
-          <div id="card-remedial" class="bg-[#111113] p-5 rounded-lg border border-amber-800/50 space-y-5">
-            <div class="border-b border-zinc-800 pb-3 flex items-center justify-between">
-              <div>
-                <h3 id="remedial-title" class="font-bold text-amber-400 text-sm">Select a concept above or click Generate Plan</h3>
-                <p class="text-[11px] text-zinc-400 font-mono">Zero student identities are used or exposed in this synthesis.</p>
-              </div>
-              <button type="button" id="btn-close-remedial" class="hidden text-zinc-500 hover:text-zinc-300 font-mono text-xs">[Reset]</button>
+          <div id="card-remedial" class="bg-[#111113] p-5 rounded-lg border border-amber-800/40 space-y-5 shadow-xl">
+            <div class="border-b border-zinc-800 pb-3">
+              <h3 id="remedial-title" class="font-bold text-amber-400 text-sm">Select a concept above and click Generate Plan</h3>
+              <p class="text-[11px] text-zinc-400 font-mono">Zero student names or roll numbers are exposed in this synthesis.</p>
             </div>
 
             <div>
-              <span class="text-xs font-mono text-zinc-300 font-semibold mb-2 block">5-Slide Concept Lecture Deck</span>
+              <span class="text-xs font-mono text-zinc-300 font-semibold mb-2.5 block">5-Slide Concept Lecture Deck</span>
               <div id="remedial-slides-grid" class="grid grid-cols-1 md:grid-cols-5 gap-3">
                 <div class="col-span-5 text-center py-8 text-zinc-500 font-mono text-xs bg-zinc-950 rounded border border-zinc-800">
                   Click "Generate Plan" to build lecture slides.
@@ -699,146 +788,146 @@
             </div>
 
             <div>
-              <span class="text-xs font-mono text-zinc-300 font-semibold mb-2 block">3 High-Signal Viva Examination Questions</span>
-              <div id="remedial-viva-list" class="space-y-2"></div>
+              <span class="text-xs font-mono text-zinc-300 font-semibold mb-2.5 block">3 High-Signal Viva Examination Questions</span>
+              <div id="remedial-viva-list" class="space-y-2.5"></div>
             </div>
           </div>
         </div>
       </section>
 
       <!-- FACULTY PAGE 3: SPLIT-TABLE DB UNLINKABILITY AUDIT -->
-      <section id="faculty-page-audit" class="hidden flex-1 overflow-y-auto custom-scroll p-6">
+      <section id="faculty-page-audit" class="hidden flex-1 overflow-y-auto custom-scroll p-6 bg-dot-matrix">
         <div class="max-w-5xl mx-auto space-y-5">
-          <div class="p-4 rounded-lg bg-emerald-950/20 border border-emerald-800/50 text-emerald-400 font-mono text-xs flex items-center justify-between flex-wrap gap-2">
-            <span>MATHEMATICAL GUARANTEE: ZERO Foreign Keys linking verified student identity to coding activity</span>
+          <div class="p-4 rounded-lg bg-emerald-950/25 border border-emerald-800/60 text-emerald-300 font-mono text-xs flex items-center justify-between flex-wrap gap-2">
+            <span class="flex items-center gap-2"><i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>MATHEMATICAL GUARANTEE: ZERO Foreign Keys linking verified identity to coding activity</span>
             <div class="flex items-center gap-2">
-              <span id="badge-fk-status" class="text-[10px] bg-emerald-900/60 text-emerald-300 px-2.5 py-1 rounded border border-emerald-800 font-semibold">PRAGMA foreign_key_list = [] (Verified)</span>
-              <button type="button" id="btn-refresh-inspector" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3 py-1 rounded text-xs font-mono cursor-pointer">
+              <span id="badge-fk-status" class="text-[10px] bg-emerald-900/60 text-emerald-200 px-2.5 py-1 rounded border border-emerald-700 font-semibold">PRAGMA foreign_key_list = [] (Verified)</span>
+              <button type="button" id="btn-refresh-inspector" class="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 px-3 py-1 rounded text-xs font-mono cursor-pointer">
                 Refresh Audit
               </button>
             </div>
           </div>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <!-- Table 1: verified_students -->
-            <div class="bg-[#111113] rounded-lg border border-zinc-800 overflow-hidden">
-              <div class="bg-zinc-900 px-4 py-2.5 border-b border-zinc-800 font-mono text-xs font-bold text-zinc-200 flex items-center justify-between">
+            <div class="bg-[#111113] rounded-lg border border-zinc-800 overflow-hidden shadow-lg">
+              <div class="bg-zinc-900/90 px-4 py-2.5 border-b border-zinc-800 font-mono text-xs font-bold text-zinc-200 flex items-center justify-between">
                 <span>Table 1: verified_students</span>
-                <span class="text-[10px] text-zinc-500 font-normal">Identities Only (0 Activity Columns)</span>
+                <span class="text-[10px] text-zinc-500 font-normal">Identities Only</span>
               </div>
-              <div class="overflow-x-auto">
-                <table class="w-full text-left font-mono text-[11px]">
-                  <thead class="bg-zinc-950 text-zinc-500 border-b border-zinc-800">
-                    <tr><th class="p-2.5">roll_no</th><th class="p-2.5">verified_at</th></tr>
-                  </thead>
-                  <tbody id="tbody-verified-students" class="divide-y divide-zinc-800 text-zinc-300">
-                    <tr><td colspan="2" class="p-4 text-center text-zinc-500">Loading DB records...</td></tr>
-                  </tbody>
-                </table>
-              </div>
+              <table class="w-full text-left font-mono text-[11px]">
+                <thead class="bg-zinc-950 text-zinc-500 border-b border-zinc-800">
+                  <tr><th class="p-2.5">roll_no</th><th class="p-2.5">verified_at</th></tr>
+                </thead>
+                <tbody id="tbody-verified-students" class="divide-y divide-zinc-800 text-zinc-300">
+                  <tr><td colspan="2" class="p-4 text-center text-zinc-500">Loading DB records...</td></tr>
+                </tbody>
+              </table>
             </div>
 
-            <!-- Table 2: ghost_profiles -->
-            <div class="bg-[#111113] rounded-lg border border-zinc-800 overflow-hidden">
-              <div class="bg-zinc-900 px-4 py-2.5 border-b border-zinc-800 font-mono text-xs font-bold text-zinc-200 flex items-center justify-between">
+            <div class="bg-[#111113] rounded-lg border border-zinc-800 overflow-hidden shadow-lg">
+              <div class="bg-zinc-900/90 px-4 py-2.5 border-b border-zinc-800 font-mono text-xs font-bold text-zinc-200 flex items-center justify-between">
                 <span>Table 2: ghost_profiles</span>
-                <span class="text-[10px] text-zinc-500 font-normal">Pseudonymous Only (0 Roll Numbers)</span>
+                <span class="text-[10px] text-zinc-500 font-normal">Pseudonymous Only</span>
               </div>
-              <div class="overflow-x-auto">
-                <table class="w-full text-left font-mono text-[11px]">
-                  <thead class="bg-zinc-950 text-zinc-500 border-b border-zinc-800">
-                    <tr><th class="p-2.5">commitment_hash</th><th class="p-2.5">alias</th><th class="p-2.5">elo</th></tr>
-                  </thead>
-                  <tbody id="tbody-ghost-profiles" class="divide-y divide-zinc-800 text-zinc-300">
-                    <tr><td colspan="3" class="p-4 text-center text-zinc-500">Loading DB records...</td></tr>
-                  </tbody>
-                </table>
-              </div>
+              <table class="w-full text-left font-mono text-[11px]">
+                <thead class="bg-zinc-950 text-zinc-500 border-b border-zinc-800">
+                  <tr><th class="p-2.5">commitment_hash</th><th class="p-2.5">alias</th><th class="p-2.5">elo</th></tr>
+                </thead>
+                <tbody id="tbody-ghost-profiles" class="divide-y divide-zinc-800 text-zinc-300">
+                  <tr><td colspan="3" class="p-4 text-center text-zinc-500">Loading DB records...</td></tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
       </section>
-
     </main>
   </div>
 
 
   <!-- ══════════════════════════════════════════════════════════════════════ -->
   <!-- PORTAL 3: DEDICATED 1v1 DUELING PORTAL (#portal-arena)                 -->
-  <!-- Stage A: Server Browser & Match Lobby -> Stage B: Live 1v1 Match Arena -->
+  <!-- Stage A: Live Server Browser Lobby -> Stage B: Head-to-Head Arena      -->
   <!-- ══════════════════════════════════════════════════════════════════════ -->
   <div id="portal-arena" class="hidden h-screen w-screen flex flex-col overflow-hidden bg-[#09090B]">
-    <!-- Arena Persistent Top Header -->
-    <header class="h-14 border-b border-zinc-800 bg-[#111113] px-4 flex items-center justify-between shrink-0 gap-3">
+    <header class="h-14 border-b border-zinc-800 bg-[#111113]/95 backdrop-blur-md px-4 flex items-center justify-between shrink-0 gap-3">
       <div class="flex items-center gap-3 shrink-0">
-        <button type="button" data-exit-portal class="bg-zinc-900 hover:bg-zinc-800 text-zinc-200 border border-zinc-700 px-2.5 py-1 rounded text-[11px] font-mono transition-colors cursor-pointer">
-          &larr; Switch Role
+        <button type="button" data-exit-portal class="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-700/80 px-2.5 py-1 rounded text-[11px] font-mono flex items-center gap-1.5 transition-colors cursor-pointer">
+          <i data-lucide="arrow-left" class="w-3 h-3"></i>
+          <span>Portal Gate</span>
         </button>
         <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-cyan-500"></span>
+          <span class="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_#06B6D4]"></span>
           <span class="font-bold text-sm text-zinc-100">CampusGhosts</span>
-          <span class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-cyan-950 text-cyan-400 border border-cyan-800">1v1 DUELING PORTAL</span>
+          <span class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-cyan-950/90 text-cyan-400 border border-cyan-800/80">1v1 ARENA</span>
         </div>
       </div>
 
-      <!-- Arena Stage Indicator / Nav -->
-      <div class="flex items-center gap-2 font-mono text-[11px]">
-        <button type="button" id="btn-arena-nav-lobby" class="nav-pill active-cyan px-3 py-1 rounded border border-transparent cursor-pointer">
-          Server Browser &amp; Lobby
+      <!-- Breadcrumb Stage Indicator -->
+      <div class="flex items-center gap-1.5 bg-zinc-950/90 p-1 rounded-md border border-zinc-800/90 font-mono text-[11px]">
+        <button type="button" id="btn-arena-nav-lobby" class="nav-pill active-cyan px-3 py-1 rounded border border-transparent flex items-center gap-1.5 cursor-pointer">
+          <i data-lucide="server" class="w-3 h-3"></i>
+          <span>1. Server Browser &amp; Lobby</span>
         </button>
-        <span class="text-zinc-600">&rarr;</span>
-        <span id="arena-nav-match-indicator" class="px-3 py-1 rounded text-zinc-500 border border-zinc-800 bg-zinc-950">
-          Live Duel Stage
+        <span class="text-zinc-600 px-1">&rarr;</span>
+        <span id="arena-nav-match-indicator" class="px-3 py-1 rounded text-zinc-500 border border-transparent flex items-center gap-1.5">
+          <i data-lucide="swords" class="w-3 h-3"></i>
+          <span>2. Live Duel Stage</span>
         </span>
       </div>
 
-      <!-- Competitor Status Pills -->
       <div class="flex items-center gap-2 shrink-0 font-mono text-[11px]">
-        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800">
-          <span class="text-zinc-500">Node:</span>
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-950 border border-zinc-800">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_#10B981]"></span>
           <span id="arena-pill-server" class="text-cyan-400 font-semibold">IN-KRMU-01</span>
         </div>
-        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800">
-          <span class="text-zinc-500">Competitor:</span>
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-950 border border-zinc-800">
           <span id="arena-pill-alias" class="text-emerald-400 font-semibold">Guest Standby</span>
         </div>
-        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800">
-          <span class="text-zinc-500">ELO:</span>
-          <span id="arena-pill-elo" class="text-zinc-200 font-bold">1200</span>
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-950 border border-zinc-800">
+          <span class="text-zinc-500">ELO</span>
+          <span id="arena-pill-elo" class="text-zinc-100 font-bold">1200</span>
         </div>
       </div>
     </header>
 
-    <!-- STAGE A: ARENA SERVER BROWSER & MATCH LOBBY (SHOWN FIRST!) -->
-    <main id="arena-page-lobby" class="flex-1 overflow-y-auto custom-scroll p-6">
+    <!-- STAGE A: ARENA SERVER BROWSER & MATCH LOBBY -->
+    <main id="arena-page-lobby" class="flex-1 overflow-y-auto custom-scroll p-6 bg-dot-matrix">
       <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-5">
 
-        <!-- Left Column (5 cols): Live Server Selector + Match Settings -->
+        <!-- Left Column: Live Server Browser & Match Options -->
         <div class="lg:col-span-5 space-y-4">
-          <!-- Step 1: Select Live Server -->
-          <div class="bg-[#111113] border border-zinc-800 rounded-lg p-4 space-y-3">
+          <div class="bg-[#111113]/95 border border-zinc-800 rounded-lg p-4 space-y-3 shadow-xl">
             <div class="flex items-center justify-between">
-              <h2 class="text-xs font-mono uppercase tracking-wider text-cyan-400 font-bold">1. Select Live Arena Server</h2>
-              <button type="button" id="btn-arena-refresh-servers" class="text-[10px] font-mono text-zinc-400 hover:text-zinc-200 underline cursor-pointer">Refresh Ping</button>
+              <h2 class="text-xs font-mono uppercase tracking-wider text-cyan-400 font-bold flex items-center gap-1.5">
+                <i data-lucide="server" class="w-3.5 h-3.5"></i>
+                <span>1. Select Live Arena Node</span>
+              </h2>
+              <button type="button" id="btn-arena-refresh-servers" class="text-[10px] font-mono text-zinc-400 hover:text-cyan-400 flex items-center gap-1 cursor-pointer">
+                <i data-lucide="refresh-cw" class="w-3 h-3"></i>
+                <span>Ping Nodes</span>
+              </button>
             </div>
             <div id="arena-server-list" class="space-y-2.5">
-              <div class="p-3 rounded border border-zinc-800 bg-zinc-950 font-mono text-xs text-zinc-500">Loading regional servers...</div>
+              <div class="p-3 rounded border border-zinc-800 bg-zinc-950 font-mono text-xs text-zinc-500">Scanning arena servers...</div>
             </div>
           </div>
 
-          <!-- Step 2: Duel Options & Competitor Handle -->
-          <div class="bg-[#111113] border border-zinc-800 rounded-lg p-4 space-y-3.5">
-            <h2 class="text-xs font-mono uppercase tracking-wider text-cyan-400 font-bold">2. Configure Match Options</h2>
+          <!-- Match Configuration -->
+          <div class="bg-[#111113]/95 border border-zinc-800 rounded-lg p-4 space-y-3.5 shadow-xl">
+            <h2 class="text-xs font-mono uppercase tracking-wider text-cyan-400 font-bold flex items-center gap-1.5">
+              <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+              <span>2. Match Options &amp; Competitor ID</span>
+            </h2>
 
-            <!-- Quick Guest / Custom Alias if not anchored yet -->
-            <div id="arena-identity-box" class="bg-zinc-950 border border-zinc-800 rounded p-3 space-y-2">
+            <div class="bg-zinc-950/90 border border-zinc-800 rounded p-3 space-y-2">
               <div class="flex items-center justify-between text-[11px] font-mono">
-                <span class="text-zinc-400">Active Ghost Profile:</span>
+                <span class="text-zinc-400">Competitor Identity:</span>
                 <span id="lobby-ghost-status" class="text-emerald-400 font-semibold">Auto-Provision Guest on Join</span>
               </div>
               <div class="flex gap-2">
-                <input id="lobby-input-roll" type="text" placeholder="Optional Roll / Handle (e.g. 2601010043)" class="flex-1 bg-[#111113] border border-zinc-800 rounded px-2 py-1 font-mono text-[11px] text-zinc-200 outline-none" />
-                <button type="button" id="btn-lobby-anchor" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-2.5 py-1 rounded text-[10px] font-mono border border-zinc-700 cursor-pointer">
+                <input id="lobby-input-roll" type="text" placeholder="Optional Roll / Handle (e.g. 2601010043)" class="flex-1 bg-[#111113] border border-zinc-800 rounded px-2.5 py-1.5 font-mono text-[11px] text-zinc-100 outline-none focus:border-cyan-500" />
+                <button type="button" id="btn-lobby-anchor" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3 py-1 rounded text-[10px] font-mono border border-zinc-700 cursor-pointer">
                   Set Identity
                 </button>
               </div>
@@ -846,8 +935,8 @@
 
             <div class="grid grid-cols-2 gap-3">
               <div>
-                <label for="arena-select-problem" class="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Challenge Problem</label>
-                <select id="arena-select-problem" class="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 rounded px-2.5 py-1.5 text-xs font-mono outline-none">
+                <label for="arena-select-problem" class="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Challenge</label>
+                <select id="arena-select-problem" class="w-full bg-zinc-950 border border-zinc-800 text-zinc-100 rounded px-2.5 py-1.5 text-xs font-mono outline-none">
                   <option value="arr-bound">Bounded Array Sum</option>
                   <option value="ptr-swap">Safe Pointer Swap</option>
                   <option value="loop-converge">Collatz Convergence</option>
@@ -856,8 +945,8 @@
                 </select>
               </div>
               <div>
-                <label for="arena-select-language" class="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Language Runtime</label>
-                <select id="arena-select-language" class="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 rounded px-2.5 py-1.5 text-xs font-mono outline-none">
+                <label for="arena-select-language" class="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Runtime</label>
+                <select id="arena-select-language" class="w-full bg-zinc-950 border border-zinc-800 text-zinc-100 rounded px-2.5 py-1.5 text-xs font-mono outline-none">
                   <option value="cpp">C++ (GCC 15)</option>
                   <option value="python">Python 3.14</option>
                 </select>
@@ -865,8 +954,8 @@
             </div>
 
             <div>
-              <label for="arena-select-mode" class="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Arena Ruleset &amp; Clock</label>
-              <select id="arena-select-mode" class="w-full bg-zinc-950 border border-zinc-800 text-zinc-200 rounded px-2.5 py-1.5 text-xs font-mono outline-none">
+              <label for="arena-select-mode" class="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Ruleset &amp; Clock</label>
+              <select id="arena-select-mode" class="w-full bg-zinc-950 border border-zinc-800 text-zinc-100 rounded px-2.5 py-1.5 text-xs font-mono outline-none">
                 <option value="ranked">Ranked 1v1 (180s Clock &bull; Strict Anti-Cheat)</option>
                 <option value="blitz">Speed Blitz (90s Clock &bull; Rapid ELO)</option>
                 <option value="practice">Sandbox Duel (180s &bull; Multi-Monitor Relaxed)</option>
@@ -874,35 +963,37 @@
             </div>
 
             <div class="grid grid-cols-2 gap-2.5 pt-1">
-              <button type="button" id="btn-arena-quick-match" class="bg-cyan-600 hover:bg-cyan-500 text-zinc-950 font-bold py-2 rounded text-xs font-mono transition-colors cursor-pointer">
-                Auto-Pair &amp; Enter Duel
+              <button type="button" id="btn-arena-quick-match" class="bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-bold py-2 rounded text-xs font-mono transition-all shadow-[0_0_18px_rgba(6,182,212,0.22)] cursor-pointer">
+                Auto-Pair &amp; Duel
               </button>
-              <button type="button" id="btn-arena-create-room" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700 font-semibold py-2 rounded text-xs font-mono transition-colors cursor-pointer">
-                + Host New Room
+              <button type="button" id="btn-arena-create-room" class="bg-zinc-900 hover:bg-zinc-800 text-zinc-100 border border-zinc-700 font-semibold py-2 rounded text-xs font-mono transition-colors cursor-pointer">
+                + Host Challenge Room
               </button>
             </div>
           </div>
         </div>
 
-        <!-- Right Column (7 cols): Live Open Rooms & Active Challengers -->
-        <div class="lg:col-span-7 bg-[#111113] border border-zinc-800 rounded-lg flex flex-col overflow-hidden">
-          <div class="bg-zinc-900 px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+        <!-- Right Column: Active Server Open Challenge Rooms -->
+        <div class="lg:col-span-7 bg-[#111113]/95 border border-zinc-800 rounded-lg flex flex-col overflow-hidden shadow-xl">
+          <div class="bg-zinc-900/90 px-4 py-3.5 border-b border-zinc-800 flex items-center justify-between">
             <div>
-              <h2 class="text-xs font-mono uppercase tracking-wider text-zinc-100 font-bold">3. Open Duel Rooms on <span id="lobby-selected-server-name" class="text-cyan-400">IN-KRMU-01</span></h2>
-              <p class="text-[11px] text-zinc-400 font-mono mt-0.5">Select an active institutional challenger below to launch your 1v1 match.</p>
+              <h2 class="text-xs font-mono uppercase tracking-wider text-zinc-100 font-bold">
+                3. Active Challenge Rooms on <span id="lobby-selected-server-name" class="text-cyan-400">IN-KRMU-01</span>
+              </h2>
+              <p class="text-[11px] text-zinc-400 font-mono mt-0.5">Accept an active peer ghost challenge below to enter the 1v1 split-pane battle.</p>
             </div>
-            <span id="lobby-room-count-badge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-800">0 Rooms</span>
+            <span id="lobby-room-count-badge" class="px-2.5 py-0.5 rounded text-[10px] font-mono bg-cyan-950 text-cyan-400 border border-cyan-800">0 Rooms</span>
           </div>
 
-          <div id="arena-rooms-list" class="flex-1 overflow-y-auto custom-scroll divide-y divide-zinc-800">
-            <div class="p-6 text-center text-zinc-500 font-mono text-xs">Fetching active server rooms...</div>
+          <div id="arena-rooms-list" class="flex-1 overflow-y-auto custom-scroll divide-y divide-zinc-800/80">
+            <div class="p-6 text-center text-zinc-500 font-mono text-xs">Fetching open rooms...</div>
           </div>
         </div>
 
       </div>
     </main>
 
-    <!-- STAGE B: LIVE 1v1 DUEL MATCH SCREEN (ENTERED FROM LOBBY) -->
+    <!-- STAGE B: LIVE 1v1 HEAD-TO-HEAD DUEL ARENA -->
     <main id="arena-page-match" class="hidden flex-1 flex flex-col overflow-hidden">
       <!-- Match Control HUD -->
       <div class="h-11 border-b border-zinc-800 bg-[#111113] px-4 flex items-center justify-between shrink-0 gap-2">
@@ -911,17 +1002,16 @@
             &larr; Return to Lobby
           </button>
 
-          <span id="match-server-badge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-zinc-900 text-cyan-400 border border-zinc-800">IN-KRMU-01</span>
+          <span id="match-server-badge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-zinc-950 text-cyan-400 border border-zinc-800">IN-KRMU-01</span>
 
-          <!-- Round Timer -->
           <div id="duel-timer-box" class="flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-zinc-950 border border-zinc-800 font-mono text-[11px]">
-            <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse shadow-[0_0_6px_#F43F5E]"></span>
             <span class="text-zinc-500 text-[10px]">CLOCK:</span>
             <span id="duel-countdown-clock" class="font-bold text-amber-400">03:00</span>
           </div>
 
           <span id="duel-status-pill" class="px-2 py-0.5 rounded font-mono text-[10px] font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800">
-            MATCH LIVE
+            LIVE MATCH
           </span>
         </div>
 
@@ -930,7 +1020,7 @@
             <span class="text-zinc-500">Strikes:</span>
             <span id="pill-strikes" class="text-amber-400 font-bold">0/3</span>
             <button type="button" id="btn-reset-strikes" class="text-zinc-400 hover:text-zinc-200 underline ml-1 cursor-pointer">Reset</button>
-            <span class="text-zinc-600">|</span>
+            <span class="text-zinc-700">|</span>
             <button type="button" id="btn-toggle-anticheat-mode" class="text-cyan-400 hover:text-cyan-300 underline cursor-pointer">Strict</button>
           </div>
 
@@ -940,47 +1030,49 @@
         </div>
       </div>
 
-      <!-- Challenge Specification Banner -->
-      <div class="bg-[#0e0e11] border-b border-zinc-800 px-4 py-1.5 flex items-center justify-between text-[11px] font-mono shrink-0">
-        <div class="flex items-center gap-2 truncate">
+      <!-- Problem Spec Strip -->
+      <div class="bg-[#0E0E12] border-b border-zinc-800 px-4 py-1.5 flex items-center justify-between text-[11px] font-mono shrink-0">
+        <div class="flex items-center gap-2.5 truncate">
           <span id="duel-problem-title" class="font-bold text-zinc-100">Bounded Array Sum</span>
           <span id="duel-problem-badge" class="px-1.5 py-0.5 rounded text-[10px] bg-amber-950 text-amber-400 border border-amber-800">ARRAY_OUT_OF_BOUNDS</span>
           <span id="duel-problem-desc" class="text-zinc-400 text-[10px] truncate">Sum array elements respecting bounds [0, N-1].</span>
         </div>
-        <span id="duel-lang-badge" class="text-cyan-400 font-semibold uppercase">C++</span>
+        <span id="duel-lang-badge" class="text-cyan-400 font-semibold uppercase px-2 py-0.5 rounded bg-cyan-950/60 border border-cyan-800/60">C++</span>
       </div>
 
-      <!-- 50/50 Side-by-Side Live Duel Panes -->
+      <!-- 50/50 Side-by-Side Split Editors -->
       <div class="flex-1 flex overflow-hidden border-b border-zinc-800">
-        <!-- Player Code Editor -->
         <div class="w-1/2 flex flex-col border-r border-zinc-800 bg-[#0C0C0E]">
-          <div class="h-7 bg-zinc-900/60 border-b border-zinc-800 px-3 flex items-center justify-between text-[10px] font-mono text-zinc-400">
-            <span id="student-pane-header" class="font-semibold text-emerald-400">You (Player Ghost)</span>
-            <span id="student-progress-label" class="text-emerald-500">0 chars &bull; Anti-Cheat Armed</span>
+          <div class="h-7 bg-zinc-900/70 border-b border-zinc-800 px-3 flex items-center justify-between text-[10px] font-mono text-zinc-400">
+            <span id="student-pane-header" class="font-semibold text-emerald-400 flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>You (Player Ghost)
+            </span>
+            <span id="student-progress-label" class="text-emerald-400">0 chars &bull; Armed</span>
           </div>
-          <div class="w-full bg-zinc-900 h-0.5">
-            <div id="student-progress-bar" class="h-0.5 bg-emerald-500 w-0 transition-all duration-150"></div>
+          <div class="w-full bg-zinc-900 h-[2px]">
+            <div id="student-progress-bar" class="h-[2px] bg-emerald-500 w-0 transition-all duration-150 shadow-[0_0_8px_#10B981]"></div>
           </div>
-          <textarea id="editor-duel-student" spellcheck="false" autocomplete="off" class="flex-1 w-full bg-transparent text-zinc-200 font-mono text-xs p-3.5 outline-none resize-none custom-scroll leading-relaxed" placeholder="// Write your solution before your rival completes theirs..."></textarea>
+          <textarea id="editor-duel-student" spellcheck="false" autocomplete="off" class="editor-surface flex-1 w-full bg-transparent text-zinc-100 font-mono text-xs p-3.5 outline-none resize-none custom-scroll leading-relaxed" placeholder="// Write your verified solution before rival finishes..."></textarea>
         </div>
 
-        <!-- Matched Rival Stream -->
-        <div class="w-1/2 flex flex-col bg-[#0A0A0C]">
-          <div class="h-7 bg-zinc-900/60 border-b border-zinc-800 px-3 flex items-center justify-between text-[10px] font-mono text-zinc-400">
-            <span id="rival-pane-header" class="font-semibold text-cyan-400">Rival Ghost</span>
+        <div class="w-1/2 flex flex-col bg-[#09090B]">
+          <div class="h-7 bg-zinc-900/70 border-b border-zinc-800 px-3 flex items-center justify-between text-[10px] font-mono text-zinc-400">
+            <span id="rival-pane-header" class="font-semibold text-cyan-400 flex items-center gap-1.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>Rival Ghost Stream
+            </span>
             <span id="replay-progress-label" class="text-cyan-400 font-bold">0%</span>
           </div>
-          <div class="w-full bg-zinc-900 h-0.5">
-            <div id="rival-progress-bar" class="h-0.5 bg-cyan-500 w-0 transition-all duration-150"></div>
+          <div class="w-full bg-zinc-900 h-[2px]">
+            <div id="rival-progress-bar" class="h-[2px] bg-cyan-400 w-0 transition-all duration-150 shadow-[0_0_8px_#22D3EE]"></div>
           </div>
           <textarea id="editor-duel-competitor" readonly class="flex-1 w-full bg-transparent text-cyan-300/90 font-mono text-xs p-3.5 outline-none resize-none custom-scroll leading-relaxed select-none cursor-default" placeholder="// Competitor keystroke replay stream..."></textarea>
         </div>
       </div>
 
-      <!-- Submit & Live Telemetry Footer -->
-      <div class="h-11 border-b border-zinc-800 bg-[#111113] px-4 flex items-center justify-between shrink-0">
+      <!-- Submit & Live Anti-Cheat Strip -->
+      <div class="h-11 bg-[#111113] px-4 flex items-center justify-between shrink-0">
         <div class="flex items-center gap-3">
-          <button type="button" id="btn-duel-submit" class="bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold px-5 py-1.5 rounded text-xs font-mono transition-colors cursor-pointer">
+          <button type="button" id="btn-duel-submit" class="bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold px-5 py-1.5 rounded text-xs font-mono shadow-[0_0_16px_rgba(16,185,129,0.2)] transition-colors cursor-pointer">
             Submit Match Code
           </button>
           <span id="duel-anti-cheat-strip" class="font-mono text-[10px] text-zinc-400">Anti-Cheat Armed &bull; Paste Blocked: 0 &bull; Trust: 100.0%</span>
@@ -999,22 +1091,22 @@
   <!-- 1v1 DUEL OUTCOME RESOLUTION MODAL                                      -->
   <!-- ──────────────────────────────────────────────────────────────────── -->
   <div id="duel-outcome-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-[#111113] border border-zinc-700/80 rounded-lg max-w-lg w-full shadow-2xl overflow-hidden font-mono text-xs">
+    <div class="bg-[#111113] border border-zinc-700/80 rounded-lg max-w-lg w-full shadow-[0_24px_60px_rgba(0,0,0,0.8)] overflow-hidden font-mono text-xs">
       <div class="px-5 py-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-950">
         <div class="flex items-center gap-2.5">
-          <span id="duel-outcome-icon" class="w-3 h-3 rounded-full bg-emerald-500"></span>
+          <span id="duel-outcome-icon" class="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_10px_#10B981]"></span>
           <span id="duel-outcome-title" class="text-sm font-bold tracking-wider text-emerald-400">DUEL CONCLUDED</span>
         </div>
-        <span id="duel-outcome-badge" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800">+24 ELO</span>
+        <span id="duel-outcome-badge" class="px-2.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800">+24 ELO</span>
       </div>
 
       <div class="p-5 space-y-4 text-zinc-300">
-        <p id="duel-outcome-message" class="text-zinc-200 leading-relaxed text-[11px] bg-zinc-900/60 p-2.5 rounded border border-zinc-800/80"></p>
+        <p id="duel-outcome-message" class="text-zinc-200 leading-relaxed text-[11px] bg-zinc-900/70 p-3 rounded border border-zinc-800/80"></p>
 
         <div class="grid grid-cols-2 gap-3">
           <div class="bg-zinc-900/80 border border-zinc-800 p-3 rounded">
             <div class="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Your Ghost</div>
-            <div id="outcome-student-alias" class="font-bold text-zinc-200 text-sm">Cipher_01</div>
+            <div id="outcome-student-alias" class="font-bold text-zinc-100 text-sm">Cipher_01</div>
             <div class="mt-2 space-y-1 text-[11px] text-zinc-400">
               <div class="flex justify-between"><span>Rating:</span><span id="outcome-student-elo" class="font-bold text-zinc-200">1200</span></div>
               <div class="flex justify-between"><span>Solve Time:</span><span id="outcome-student-time" class="text-cyan-400">0.0s</span></div>
@@ -1024,7 +1116,7 @@
 
           <div class="bg-zinc-900/80 border border-zinc-800 p-3 rounded">
             <div class="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Matched Rival</div>
-            <div id="outcome-rival-alias" class="font-bold text-zinc-200 text-sm">Cipher_14</div>
+            <div id="outcome-rival-alias" class="font-bold text-zinc-100 text-sm">Cipher_14</div>
             <div class="mt-2 space-y-1 text-[11px] text-zinc-400">
               <div class="flex justify-between"><span>Rating:</span><span id="outcome-rival-elo" class="font-bold text-zinc-200">1225</span></div>
               <div class="flex justify-between"><span>Finish Status:</span><span id="outcome-rival-status" class="text-zinc-300">Writing</span></div>
@@ -1048,7 +1140,7 @@
         <button type="button" id="btn-outcome-lobby" class="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-700 px-3 py-1.5 rounded text-[11px] cursor-pointer">
           Return to Server Lobby
         </button>
-        <button type="button" id="btn-outcome-next" class="bg-cyan-600 hover:bg-cyan-500 text-zinc-950 font-bold px-4 py-1.5 rounded text-[11px] cursor-pointer">
+        <button type="button" id="btn-outcome-next" class="bg-cyan-500 hover:bg-cyan-400 text-zinc-950 font-bold px-4 py-1.5 rounded text-[11px] cursor-pointer">
           Rematch on Server
         </button>
       </div>
