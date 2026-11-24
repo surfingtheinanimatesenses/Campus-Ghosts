@@ -1,65 +1,35 @@
 """
-db.py - SQLite Database Module for CampusGhosts.
+db.py - SQLite Database Module for CampusGhosts Phase 1.
 
 Architectural Guarantees:
 1. Split-Table Schema: 3 isolated tables with ZERO foreign keys.
 2. ZERO shared timestamps or joinable identity-activity telemetry columns.
 3. Cryptographic commitment generation with SHA-256 ('||' separator).
 4. k-Anonymity telemetry reporting with distinct ghost counting.
-5. Vercel Serverless compatibility: Automatically routes to /tmp/campusghosts.db
-   when executing in a serverless read-only container.
 """
 
 from datetime import datetime, timezone, timedelta
 import hashlib
 import os
-from pathlib import Path
 import sqlite3
 from typing import Any, Dict, List, Optional
 
 # Default path points to campusghosts.db in the directory of this file
-DEFAULT_LOCAL_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "campusghosts.db")
-
-
-def is_serverless_env() -> bool:
-    """Detect if running in Vercel or AWS Lambda serverless read-only runtime."""
-    if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME") or os.getenv("LAMBDA_TASK_ROOT"):
-        return True
-    # Test if current directory is writable
-    try:
-        test_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".write_test")
-        with open(test_file, "w") as f:
-            f.write("ok")
-        os.remove(test_file)
-        return False
-    except (OSError, PermissionError):
-        return True
+DEFAULT_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "campusghosts.db")
 
 
 def get_db_path(db_path: Optional[str] = None) -> str:
-    """Return configured database path or serverless /tmp fallback."""
-    if db_path:
-        return db_path
-    env_override = os.getenv("CAMPUSGHOSTS_DB")
-    if env_override:
-        return env_override
-    if is_serverless_env():
-        return "/tmp/campusghosts.db"
-    return DEFAULT_LOCAL_DB
+    """Return configured database path or default."""
+    return db_path or os.getenv("CAMPUSGHOSTS_DB", DEFAULT_DB_PATH)
 
 
 def get_connection(db_path: Optional[str] = None) -> sqlite3.Connection:
     """Create a SQLite connection configured with WAL journal mode and busy timeout."""
     target_path = get_db_path(db_path)
-    os.makedirs(os.path.dirname(os.path.abspath(target_path)), exist_ok=True)
     conn = sqlite3.connect(target_path, timeout=10.0)
     conn.row_factory = sqlite3.Row
-    try:
-        conn.execute("PRAGMA journal_mode=WAL;")
-        conn.execute("PRAGMA synchronous=NORMAL;")
-    except sqlite3.OperationalError:
-        # Some in-memory or ephemeral tmp mounts fallback to rollback journal
-        conn.execute("PRAGMA journal_mode=MEMORY;")
+    conn.execute("PRAGMA journal_mode=WAL;")
+    conn.execute("PRAGMA synchronous=NORMAL;")
     return conn
 
 
@@ -124,7 +94,7 @@ def init_and_seed_db(db_path: Optional[str] = None) -> None:
        - POINTER_DEREF_NULL : 14 distinct ghosts
        - LOOP_INFINITE_BOUND : 9 distinct ghosts
        - RECURSION_NO_BASE  : 6 distinct ghosts
-       - ARRAY_OUT_OF_BOUNDS: 4 distinct ghosts (k < 5, starts masked)
+       - ARRAY_OUT_OF_BOUNDS: 4 distinct ghosts (k < 5, must start masked)
     """
     conn = get_connection(db_path)
     try:
@@ -172,6 +142,8 @@ def init_and_seed_db(db_path: Optional[str] = None) -> None:
             )
 
         # 2. Seed telemetry_events with exact distinct ghost allocations
+        # Telemetry uses distinct events and intentionally includes duplicate events
+        # per ghost to verify COUNT(DISTINCT commitment_hash) correctness.
         telemetry_rows: List[tuple] = []
 
         # Target 1: POINTER_DEREF_NULL -> 14 distinct ghosts (ghost_hashes[0:14])
@@ -204,6 +176,7 @@ def init_and_seed_db(db_path: Optional[str] = None) -> None:
         for idx, g_hash in enumerate(ghost_hashes[29:33]):
             t_stamp = (base_time + timedelta(hours=idx + 3, minutes=30)).isoformat()
             telemetry_rows.append((g_hash, "ARRAY_OUT_OF_BOUNDS", "CRITICAL", t_stamp))
+            # Ghosts 29 and 31 made 2 extra attempts, but distinct count must remain exactly 4
             if idx in (0, 2):
                 extra_1 = (base_time + timedelta(hours=idx + 3, minutes=40)).isoformat()
                 extra_2 = (base_time + timedelta(hours=idx + 3, minutes=55)).isoformat()

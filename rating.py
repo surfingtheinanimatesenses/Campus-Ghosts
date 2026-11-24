@@ -1,5 +1,5 @@
 """
-rating.py - Performance-Aware ELO Rating System for CampusGhosts.
+rating.py - Performance-Aware ELO Rating System for CampusGhosts Phase 1.
 
 Calculates rating updates based on:
 1. Classical logistic match expectations (K=32).

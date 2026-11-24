@@ -1,1443 +1,560 @@
 <!DOCTYPE html>
-<html lang="en" class="antialiased">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CampusGhosts — Privacy-Preserving Competitive Arena &amp; Socratic Diagnostic Engine</title>
-
-  <!-- Offline Fonts & Vendors -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-
-  <!-- Offline Vendor Libraries -->
-  <script src="vendor/tailwindcss.js"></script>
+  <title>CampusGhosts — Zero-Knowledge Developer Infrastructure & 1v1 Arena</title>
+  
+  <!-- Tailwind CSS & Chart.js Local / CDN -->
+  <script src="/static/vendor/tailwindcss.js"></script>
+  <script src="/static/vendor/chart.umd.min.js"></script>
+  <script src="/static/vendor/lucide.min.js"></script>
   <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
-            mono: ['JetBrains Mono', 'monospace'],
-          },
-          colors: {
-            canvas: '#09090B',
-            panel: '#111113',
-            toolbar: '#16161A',
-            border: '#27272A',
-            'border-subtle': '#1E1E22',
-            'text-primary': '#FAFAFA',
-            'text-secondary': '#A1A1AA',
-            'text-muted': '#71717A',
-            surface: '#0C0C0E',
-            emerald: { DEFAULT: '#10B981' },
-            crimson: { DEFAULT: '#EF4444' },
-            amber: { DEFAULT: '#F59E0B' },
-          }
-        }
-      }
-    }
+    if (!window.tailwind) document.write('<script src="https://cdn.tailwindcss.com"><\/script>');
+    if (!window.Chart) document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js"><\/script>');
+    if (!window.lucide) document.write('<script src="https://unpkg.com/lucide@latest"><\/script>');
   </script>
 
-  <!-- Chart.js (Offline) -->
-  <script src="vendor/chart.umd.min.js"></script>
-
-  <!-- Lucide Icons (Offline) -->
-  <script src="vendor/lucide.min.js"></script>
-
-  <link rel="stylesheet" href="styles.css">
+  <style>
+    :root {
+      --canvas: #09090B;
+      --panel: #111113;
+      --border: #27272A;
+      --border-subtle: #1E1E22;
+      --emerald: #10B981;
+      --crimson: #EF4444;
+      --amber: #F59E0B;
+    }
+    body {
+      background-color: var(--canvas);
+      color: #FAFAFA;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .font-mono {
+      font-family: "JetBrains Mono", Menlo, Consolas, monospace;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #111113;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #27272A;
+      border-radius: 3px;
+    }
+    .tab-btn.active {
+      border-bottom: 2px solid var(--emerald);
+      color: #FAFAFA;
+    }
+    .tab-btn:not(.active) {
+      color: #71717A;
+    }
+  </style>
 </head>
-<body class="bg-canvas text-text-primary font-sans h-screen w-screen overflow-hidden flex flex-col">
+<body class="h-screen flex flex-col overflow-hidden text-xs select-none">
 
-  <!-- ═══════════════════════════════════════════════════════════════
-       VIEW 0: 3-COLUMN AUTHENTICATION & OPEN PRACTICE GATEWAY
-       ═══════════════════════════════════════════════════════════════ -->
-  <div id="view-login-gate" class="h-full w-full flex flex-col items-center justify-center p-6 overflow-y-auto">
-    <!-- Brand Header -->
-    <div class="flex flex-col items-center mb-8 text-center max-w-2xl">
-      <div class="flex items-center gap-3 mb-2">
-        <div class="w-10 h-10 rounded-lg bg-panel border border-border flex items-center justify-center">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FAFAFA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2L3 7v10l9 5 9-5V7l-9-5Z"/>
-            <path d="M12 22V12"/>
-            <path d="M12 12 3 7"/>
-            <path d="m12 12 9-5"/>
-          </svg>
-        </div>
-        <h1 class="text-2xl font-bold tracking-tight">CampusGhosts</h1>
-        <span class="section-pill text-xs">v2.2</span>
-      </div>
-      <p class="text-xs text-text-secondary leading-relaxed">
-        Zero-Knowledge Competitive Systems Coding Arena &amp; Differential Telemetry Architecture. Early mistakes remain mathematically dissociated from student institutional identities.
-      </p>
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- TOP BAR: Auth Commitment & Status Pills                               -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <header class="h-14 border-b border-zinc-800 bg-[#111113] px-4 flex items-center justify-between shrink-0 gap-4">
+    <!-- Brand Title -->
+    <div class="flex items-center gap-2 shrink-0">
+      <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
+      <span class="font-bold tracking-tight text-sm text-zinc-100 flex items-center gap-1.5">
+        CampusGhosts <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 font-normal">v2.0</span>
+      </span>
     </div>
 
-    <!-- 3-Column Gateway Cards Grid -->
-    <div class="w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-5">
-      
-      <!-- Card 1: Student Zero-Knowledge Sign-In -->
-      <div class="card p-5 flex flex-col justify-between relative overflow-hidden">
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500/40 via-emerald-500 to-emerald-500/20"></div>
-        <div>
-          <div class="flex items-center justify-between mb-2">
-            <div class="flex items-center gap-2">
-              <i data-lucide="user-check" class="w-4 h-4 text-emerald"></i>
-              <h2 class="text-sm font-semibold">Student ZK Portal</h2>
-            </div>
-            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald/10 text-emerald border border-emerald/20">ZK Shield</span>
-          </div>
-
-          <!-- Auth Mode Selector (Roll Salt vs Email OTP) -->
-          <div class="flex items-center gap-1 bg-surface p-1 rounded-md border border-border mb-3 text-[11px] font-mono">
-            <button type="button" id="tab-auth-roll" class="flex-1 py-1 rounded bg-zinc-800 text-zinc-100 font-semibold cursor-pointer" onclick="App.switchStudentAuthMode('roll')">
-              Roll + Salt
-            </button>
-            <button type="button" id="tab-auth-email" class="flex-1 py-1 rounded text-zinc-400 hover:text-zinc-200 cursor-pointer" onclick="App.switchStudentAuthMode('email')">
-              Campus Email OTP
-            </button>
-          </div>
-
-          <!-- Mode A: Roll + Salt Form -->
-          <form id="form-student-login" onsubmit="App.handleStudentLogin(event)" class="space-y-2.5">
-            <div>
-              <label class="field-label">Institutional Roll Number</label>
-              <input id="input-student-roll" type="text" class="field-input font-mono" placeholder="e.g. 2601010043" required autocomplete="off" spellcheck="false">
-            </div>
-            <div>
-              <label class="field-label">Private Salt / Secret Passphrase</label>
-              <input id="input-student-salt" type="password" class="field-input font-mono" placeholder="e.g. krmu2026" required autocomplete="off" spellcheck="false">
-            </div>
-            <div>
-              <label class="field-label">Academic Cohort / Section</label>
-              <select id="input-student-section" class="field-input text-xs font-medium cursor-pointer">
-                <option value="CSE-1C">CSE-1C (Systems Programming Lab)</option>
-                <option value="CSE-1A">CSE-1A (Core CS)</option>
-                <option value="CSE-1B">CSE-1B (Core CS)</option>
-              </select>
-            </div>
-            <button type="submit" id="btn-student-login" class="btn-primary w-full mt-2">
-              <i data-lucide="zap" class="w-4 h-4"></i>
-              <span class="btn-label">Enter Ghost Arena</span>
-              <span class="spinner hidden"></span>
-            </button>
-          </form>
-
-          <!-- Mode B: Institutional Email OTP Form -->
-          <div id="form-student-email-otp" class="hidden space-y-2.5">
-            <div>
-              <label class="field-label">Institutional Academic Email</label>
-              <div class="flex gap-2">
-                <input id="input-student-email" type="email" class="field-input font-mono text-xs flex-1" placeholder="e.g. student@krmu.edu.in" autocomplete="off" spellcheck="false">
-                <button type="button" id="btn-send-otp" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 px-3 py-1.5 rounded text-xs font-mono shrink-0 cursor-pointer border border-zinc-700" onclick="App.requestEmailOtp()">
-                  Send OTP
-                </button>
-              </div>
-            </div>
-
-            <div id="section-otp-input" class="hidden space-y-2">
-              <label class="field-label">6-Digit Verification Code</label>
-              <div class="flex gap-2">
-                <input id="input-email-otp" type="text" maxlength="6" class="field-input font-mono text-center tracking-widest text-sm font-bold flex-1" placeholder="------">
-                <button type="button" id="btn-autofill-otp" class="text-[10px] font-mono text-cyan-400 bg-cyan-950/40 border border-cyan-800/60 px-2 py-1 rounded cursor-pointer shrink-0" onclick="App.autofillDemoOtp()">
-                  Auto Demo
-                </button>
-              </div>
-              <button type="button" id="btn-verify-otp" class="btn-primary w-full mt-1 bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold" onclick="App.verifyEmailOtp()">
-                <i data-lucide="shield-check" class="w-4 h-4"></i>
-                <span>Verify &amp; Anchor ZK Ghost</span>
-              </button>
-            </div>
-
-            <div class="p-2 rounded bg-surface border border-border text-[10px] text-zinc-400 space-y-1">
-              <span class="text-emerald-400 font-semibold block">&check; Zero Foreign Keys Architecture:</span>
-              <p>Email is verified in an isolated vault. Public leaderboards and telemetries store ZERO email addresses or student identifiers.</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
-          <span class="text-text-muted">Fast Demonstration:</span>
-          <button type="button" class="text-text-secondary hover:text-text-primary underline cursor-pointer text-xs font-mono" onclick="App.quickFillStudent()">
-            Quick-Fill (2601010043)
-          </button>
-        </div>
+    <!-- Blind Commitment Input Form -->
+    <div class="flex items-center gap-2 flex-1 max-w-2xl">
+      <div class="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 flex-1">
+        <span class="text-zinc-500 font-mono text-[11px]">Roll:</span>
+        <input id="input-roll-no" type="text" placeholder="Roll No (e.g. 2601010043)" class="bg-transparent border-none outline-none font-mono text-xs w-full text-zinc-200" />
       </div>
 
-      <!-- Card 2: Faculty Institutional Sign-In -->
-      <div class="card p-5 flex flex-col justify-between relative overflow-hidden">
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500/40 via-amber-500 to-amber-500/20"></div>
-        <div>
-          <div class="flex items-center justify-between mb-2.5">
-            <div class="flex items-center gap-2">
-              <i data-lucide="shield-alert" class="w-4 h-4 text-amber"></i>
-              <h2 class="text-sm font-semibold">Faculty Portal</h2>
-            </div>
-            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber/10 text-amber border border-amber/20">k-Anon Active</span>
-          </div>
-          <p class="text-xs text-text-muted mb-3.5 leading-relaxed">
-            Inspect $k$-anonymized concept clusters, trigger 10-minute remedial plans, govern SOS flares, and broadcast notices.
-          </p>
-
-          <form id="form-faculty-login" onsubmit="App.handleFacultyLogin(event)" class="space-y-2.5">
-            <div>
-              <label class="field-label">Institutional Faculty Email</label>
-              <input id="input-faculty-email" type="email" class="field-input font-mono" placeholder="prof.sharma@krmangalam.edu.in" required autocomplete="off" spellcheck="false">
-            </div>
-            <div>
-              <label class="field-label">Department Access Passcode</label>
-              <input id="input-faculty-passcode" type="password" class="field-input font-mono" placeholder="KRMU-FAC-2026" required autocomplete="off" spellcheck="false">
-            </div>
-            <div>
-              <label class="field-label">Monitored Cohort</label>
-              <select id="input-faculty-section" class="field-input text-xs font-medium cursor-pointer">
-                <option value="CSE-1C">CSE-1C (Active Duel Lab)</option>
-                <option value="CSE-1A">CSE-1A</option>
-                <option value="CSE-1B">CSE-1B</option>
-              </select>
-            </div>
-            <button type="submit" id="btn-faculty-login" class="btn-primary w-full mt-2">
-              <i data-lucide="lock" class="w-4 h-4"></i>
-              <span class="btn-label">Open Telemetry Console</span>
-              <span class="spinner hidden"></span>
-            </button>
-          </form>
-        </div>
-
-        <div class="mt-4 pt-3 border-t border-border flex items-center justify-between text-xs">
-          <span class="text-text-muted">Fast Demonstration:</span>
-          <button type="button" class="text-text-secondary hover:text-text-primary underline cursor-pointer text-xs font-mono" onclick="App.quickFillFaculty()">
-            Quick-Fill Faculty
-          </button>
-        </div>
+      <div class="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 flex-1">
+        <span class="text-zinc-500 font-mono text-[11px]">Salt:</span>
+        <input id="input-secret-salt" type="text" placeholder="Private secret salt (min 8 chars)" class="bg-transparent border-none outline-none font-mono text-xs flex-1 text-zinc-200" />
+        <button id="btn-gen-salt" title="Generate Cryptographic Salt" class="text-[10px] font-mono text-zinc-400 hover:text-zinc-200 px-1 rounded hover:bg-zinc-800">
+          Random
+        </button>
       </div>
 
-      <!-- Card 3: Live 1v1 Ghost Duel Arena (Split-Screen Dual Competitor) -->
-      <div class="card p-5 flex flex-col justify-between relative overflow-hidden border-border hover:border-cyan-500/40 transition-colors">
-        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500/40 via-cyan-500 to-cyan-500/20"></div>
-        <div>
-          <div class="flex items-center justify-between mb-2.5">
-            <div class="flex items-center gap-2">
-              <i data-lucide="swords" class="w-4 h-4 text-cyan-400"></i>
-              <h2 class="text-sm font-semibold">Live 1v1 Ghost Arena</h2>
-            </div>
-            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Dual Stream</span>
-          </div>
-          <p class="text-xs text-text-muted mb-4 leading-relaxed">
-            Side-by-side 1v1 live duel against Phantom_42 competitor stream with real-time AntiCheatGuard, demo presets, and live k-anonymity telemetry.
-          </p>
+      <button id="btn-demo-fill" title="Populate demo test credentials" class="text-[10px] font-mono text-zinc-400 hover:text-emerald-400 px-2 py-1.5 rounded border border-zinc-800 hover:border-emerald-600 transition-colors shrink-0">
+        Demo Fill
+      </button>
 
-          <div class="space-y-2.5 bg-surface p-3 rounded border border-border-subtle text-xs mb-4">
-            <div class="flex items-center gap-2 text-text-secondary">
-              <i data-lucide="check" class="w-3.5 h-3.5 text-emerald"></i>
-              <span>Live side-by-side keystroke competitor replay</span>
-            </div>
-            <div class="flex items-center gap-2 text-text-secondary">
-              <i data-lucide="check" class="w-3.5 h-3.5 text-emerald"></i>
-              <span>AntiCheatGuard (Paste block, 3-strike tab tracking)</span>
-            </div>
-            <div class="flex items-center gap-2 text-text-secondary">
-              <i data-lucide="check" class="w-3.5 h-3.5 text-emerald"></i>
-              <span>3 Demo Bug Presets &amp; Socratic AI Coach</span>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <button type="button" class="btn-primary w-full py-2.5 flex items-center justify-center gap-2 text-xs bg-cyan-600 hover:bg-cyan-500 text-zinc-950 font-bold cursor-pointer" onclick="App.launchSplitDuelArena()">
-            <i data-lucide="play" class="w-4 h-4 fill-current"></i>
-            <span class="font-semibold">Launch 1v1 Ghost Duel Arena &rarr;</span>
-          </button>
-          <div class="mt-4 pt-3 border-t border-border text-center text-[11px] text-text-muted flex items-center justify-center gap-2">
-            <span>Also available:</span>
-            <button type="button" class="underline hover:text-text-primary cursor-pointer" onclick="App.launchOpenPracticeArena()">Single Sandbox</button>
-          </div>
-        </div>
-      </div>
-
+      <button id="btn-auth-commit" class="bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-semibold px-3 py-1.5 rounded transition-colors text-xs font-mono shrink-0 flex items-center gap-1">
+        <span>Enter as Ghost</span>
+      </button>
     </div>
 
-    <!-- Security Guarantee Footer -->
-    <div class="mt-8 flex items-center gap-6 text-[11px] text-text-muted">
-      <span class="flex items-center gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald"></i> Zero Foreign Keys in DB</span>
-      <span class="flex items-center gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald"></i> Constant-Time HMAC Verification</span>
-      <span class="flex items-center gap-1.5"><i data-lucide="check" class="w-3.5 h-3.5 text-emerald"></i> Offline AST Fallback Engine</span>
-    </div>
-  </div>
-
-
-  <!-- ═══════════════════════════════════════════════════════════════
-       PRODUCTION 2-COLUMN APP SHELL (STUDENT, GUEST & FACULTY WORKSPACES)
-       ═══════════════════════════════════════════════════════════════ -->
-  <div id="view-app-shell" class="h-full w-full flex overflow-hidden hidden">
-
-    <!-- ─── 230px LEFT SIDEBAR ─── -->
-    <aside class="w-[230px] h-full bg-panel border-r border-border flex flex-col justify-between shrink-0 select-none">
-      
-      <!-- Top Section -->
-      <div>
-        <!-- Brand Row -->
-        <div class="h-[52px] border-b border-border flex items-center justify-between px-4">
-          <div class="flex items-center gap-2">
-            <div class="brand-mark" aria-hidden="true">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FAFAFA" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2L3 7v10l9 5 9-5V7l-9-5Z"/>
-                <path d="M12 22V12"/>
-                <path d="M12 12 3 7"/>
-                <path d="m12 12 9-5"/>
-              </svg>
-            </div>
-            <span class="text-xs font-semibold tracking-tight text-text-primary">CampusGhosts</span>
-          </div>
-          <span id="sidebar-role-badge" class="section-pill uppercase text-[10px]">Student</span>
-        </div>
-
-        <!-- Identity / Session Card -->
-        <div class="p-3 border-b border-border">
-          <!-- Student / Guest Identity Box -->
-          <div id="sidebar-student-card" class="bg-surface border border-border-subtle rounded-md p-2.5">
-            <div class="flex items-center justify-between mb-1.5">
-              <div class="flex items-center gap-1.5 overflow-hidden">
-                <span class="status-dot"></span>
-                <span id="sb-ghost-alias" class="font-mono text-xs font-semibold truncate text-emerald">Shadow_188</span>
-              </div>
-              <span id="sb-ghost-rating" class="font-mono text-[11px] font-medium tabular-nums text-text-secondary">Rating 1540</span>
-            </div>
-            <div class="flex items-center justify-between text-[10px] text-text-muted mb-2">
-              <span id="sb-ghost-rank">Rank #1 • Solved 28</span>
-              <span class="font-mono" id="sb-ghost-section">CSE-1C</span>
-            </div>
-            <button id="btn-download-recovery" class="btn-secondary w-full text-[11px] py-1 flex items-center justify-center gap-1.5" onclick="App.downloadRecoveryCard()">
-              <i data-lucide="key" class="w-3 h-3 text-text-muted"></i>
-              <span>Download .key Card</span>
-            </button>
-          </div>
-
-          <!-- Faculty Identity Box -->
-          <div id="sidebar-faculty-card" class="bg-surface border border-border-subtle rounded-md p-2.5 hidden">
-            <div class="flex items-center gap-2 mb-1">
-              <i data-lucide="graduation-cap" class="w-3.5 h-3.5 text-amber"></i>
-              <span id="sb-faculty-name" class="text-xs font-semibold truncate">Prof. Sharma</span>
-            </div>
-            <p class="text-[10px] text-text-muted mb-1">School of Engineering &amp; Tech</p>
-            <div class="flex items-center justify-between text-[10px] font-mono text-text-secondary">
-              <span>Cohort: <strong id="sb-faculty-section" class="text-text-primary">CSE-1C</strong></span>
-              <span class="text-emerald font-semibold">k-Anon Active</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Navigation Menu -->
-        <nav class="p-2 space-y-1">
-          <!-- Student / Guest Nav Links -->
-          <div id="nav-student-items" class="space-y-1">
-            <button class="nav-item active" data-workspace-view="student-arena" onclick="App.switchStudentView('student-arena')">
-              <i data-lucide="swords" class="w-4 h-4 text-emerald"></i>
-              <span>Ghost Duel Arena</span>
-            </button>
-            <button class="nav-item" data-workspace-view="student-channels" onclick="App.switchStudentView('student-channels')">
-              <i data-lucide="message-square" class="w-4 h-4"></i>
-              <span>Ghost Channels</span>
-            </button>
-            <button class="nav-item" data-workspace-view="student-sos" onclick="App.switchStudentView('student-sos')">
-              <i data-lucide="life-buoy" class="w-4 h-4 text-amber"></i>
-              <span>Anonymous SOS Feed</span>
-            </button>
-            <button class="nav-item" data-workspace-view="student-standings" onclick="App.switchStudentView('student-standings')">
-              <i data-lucide="trophy" class="w-4 h-4"></i>
-              <span>Standings &amp; Vault</span>
-            </button>
-          </div>
-
-          <!-- Faculty Nav Links (3 Tabs) -->
-          <div id="nav-faculty-items" class="space-y-1 hidden">
-            <button class="nav-item active" data-workspace-view="faculty-telemetry" onclick="App.switchFacultyView('faculty-telemetry')">
-              <i data-lucide="shield-check" class="w-4 h-4 text-emerald"></i>
-              <span>k-Anonymity Telemetry</span>
-            </button>
-            <button class="nav-item" data-workspace-view="faculty-broadcast" onclick="App.switchFacultyView('faculty-broadcast')">
-              <i data-lucide="radio" class="w-4 h-4 text-amber"></i>
-              <span>Broadcast &amp; Channels</span>
-            </button>
-            <button class="nav-item" data-workspace-view="faculty-assignment" onclick="App.switchFacultyView('faculty-assignment')">
-              <i data-lucide="plus-circle" class="w-4 h-4"></i>
-              <span>Publish Assignment</span>
-            </button>
-          </div>
-        </nav>
+    <!-- Live Status Pills -->
+    <div class="flex items-center gap-2 shrink-0 font-mono text-[11px]">
+      <!-- Active Ghost Alias -->
+      <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800">
+        <span class="text-zinc-500">Ghost:</span>
+        <span id="pill-ghost-alias" class="text-emerald-400 font-semibold">Not Anchored</span>
       </div>
 
-      <!-- Bottom Sidebar Footer -->
-      <div class="p-3 border-t border-border space-y-2">
-        <div class="flex items-center justify-between text-[11px] text-text-muted px-1">
-          <span class="flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald"></span>
-            <span>SQLite WAL</span>
+      <!-- Current ELO Rating -->
+      <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800">
+        <span class="text-zinc-500">ELO:</span>
+        <span id="pill-elo" class="text-zinc-200 font-bold">1200</span>
+      </div>
+
+      <!-- Human Trust Score -->
+      <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800" title="Bot Detection Trust Score">
+        <span class="text-zinc-500">Trust:</span>
+        <span id="pill-trust" class="text-emerald-400 font-bold">100.0%</span>
+      </div>
+
+      <!-- 3-Strike Tab Counter & Mode Toggle -->
+      <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800">
+        <span class="text-zinc-500">Strikes:</span>
+        <span id="pill-strikes" class="text-amber-400 font-bold">0/3</span>
+        <button id="btn-reset-strikes" title="Reset strikes for live rehearsals" class="text-[9px] text-zinc-400 hover:text-zinc-200 ml-1 underline">Reset</button>
+        <span class="text-zinc-600">|</span>
+        <button id="btn-toggle-anticheat-mode" title="Toggle between Strict Duel and Rehearsal mode" class="text-[9px] text-zinc-400 hover:text-cyan-400 font-mono underline">Strict</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- MAIN SPLIT VIEW (50% Student Arena | 50% Faculty / Placement)         -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <main class="flex-1 flex overflow-hidden">
+
+    <!-- ──────────────────────────────────────────────────────────────────── -->
+    <!-- LEFT PANE: Student 1v1 Ghost Duel Arena                              -->
+    <!-- ──────────────────────────────────────────────────────────────────── -->
+    <section class="w-1/2 border-r border-zinc-800 flex flex-col bg-[#09090B] overflow-hidden">
+      <!-- Duel Control Bar -->
+      <div class="h-10 border-b border-zinc-800 bg-[#111113] px-3 flex items-center justify-between shrink-0 gap-2">
+        <div class="flex items-center gap-2">
+          <button id="btn-start-duel" class="bg-cyan-600 hover:bg-cyan-500 text-zinc-950 font-bold px-2.5 py-1 rounded text-[11px] font-mono transition-colors flex items-center gap-1">
+            <span id="btn-start-duel-label">Start 1v1 Duel</span>
+          </button>
+
+          <!-- Live Round Countdown Timer HUD -->
+          <div id="duel-timer-box" class="hidden flex items-center gap-1.5 px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 font-mono text-[11px]">
+            <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>
+            <span class="text-zinc-500 text-[10px]">ROUND CLOCK:</span>
+            <span id="duel-countdown-clock" class="font-bold text-amber-400">03:00</span>
+          </div>
+
+          <!-- Duel Match State Pill -->
+          <span id="duel-status-pill" class="hidden px-2 py-0.5 rounded font-mono text-[10px] font-semibold bg-cyan-950 text-cyan-400 border border-cyan-800">
+            STANDBY
           </span>
-          <span class="font-mono text-[10px]" id="sb-db-ghosts">42 ghosts</span>
-        </div>
-        <button class="btn-secondary w-full text-xs py-1.5 flex items-center justify-center gap-1.5 text-crimson hover:bg-crimson/10 border-crimson/20" onclick="App.signOut()">
-          <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
-          <span id="sb-signout-text">Sign Out / Switch Role</span>
-        </button>
-      </div>
-    </aside>
 
-    <!-- ─── MAIN CONTENT VIEWPORT ─── -->
-    <div class="flex-1 h-full flex flex-col overflow-hidden bg-canvas">
-      
-      <!-- Top Workspace Header Bar (52px) -->
-      <header class="h-[52px] border-b border-border bg-canvas flex items-center justify-between px-6 shrink-0">
-        <div class="flex items-center gap-3">
-          <h2 id="topbar-title" class="text-sm font-semibold text-text-primary">Ghost Duel Arena</h2>
-          <span class="text-text-muted text-xs">•</span>
-          <span id="topbar-subtitle" class="text-xs text-text-secondary">Systems Programming Live Duel</span>
+          <!-- Dynamic Problem Selector -->
+          <select id="select-problem" class="bg-zinc-900 border border-zinc-800 text-zinc-200 rounded px-2 py-1 text-[11px] font-mono outline-none font-semibold">
+            <option value="arr-bound">1. Bounded Array Sum</option>
+            <option value="ptr-swap">2. Safe Pointer Swap</option>
+            <option value="loop-converge">3. Collatz Loop Invariant</option>
+            <option value="rec-fact">4. Guarded Recursion</option>
+            <option value="str-palindrome">5. Two-Pointer Palindrome</option>
+          </select>
+
+          <!-- Language Selector -->
+          <select id="select-language" class="bg-zinc-900 border border-zinc-800 text-zinc-300 rounded px-2 py-1 text-[11px] font-mono outline-none">
+            <option value="cpp">C++ (GCC 15)</option>
+            <option value="python">Python 3.14</option>
+          </select>
         </div>
-        
-        <div class="flex items-center gap-3">
-          <!-- Back to Portal button for Guest Sandbox -->
-          <button id="btn-back-to-portal" class="btn-secondary text-xs py-1 px-2.5 hidden" onclick="App.signOut()">
-            <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
-            <span>Back to Sign-In Portal</span>
+
+        <!-- Problem Starter Code & Invariant Testing Controls -->
+        <div class="flex items-center gap-1">
+          <button id="btn-reset-starter" class="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-cyan-400 px-2 py-1 rounded text-[10px] font-mono" title="Reset editor to clean problem starter code">
+            Reset Starter
           </button>
-
-          <div id="topbar-hash-box" class="flex items-center gap-1.5 text-xs text-text-muted font-mono cursor-pointer select-none bg-panel px-2.5 py-1 rounded border border-border" onclick="App.copyCurrentHash()" title="Click to copy SHA-256 commitment hash">
-            <i data-lucide="hash" class="w-3 h-3 text-text-muted"></i>
-            <span id="topbar-hash-text">sha256:70b6...e0c7</span>
-            <i data-lucide="copy" class="w-3 h-3 text-text-muted hover:text-text-primary"></i>
-          </div>
-          <span id="topbar-section-pill" class="section-pill font-mono">CSE-1C</span>
-        </div>
-      </header>
-
-      <!-- ─── STUDENT & GUEST WORKSPACE VIEWS ─── -->
-
-      <!-- TAB 1: GHOST DUEL ARENA (Live Rival Race + 3-Pane Lab + Performance Profiler) -->
-      <div id="subview-student-arena" class="workspace-subview flex-1 overflow-hidden flex flex-col">
-        
-        <!-- Live Duel HUD & Rival Telemetry Bar -->
-        <div class="duel-hud-strip border-b border-border bg-panel px-4 py-2 shrink-0 flex items-center justify-between gap-4">
-          <!-- Left: Duel Mode Selector (Bug Hunt, Code Golf, Clean Pass) & Clock -->
-          <div class="flex items-center gap-4">
-            <div class="flex items-center gap-1 bg-surface border border-border rounded p-0.5 text-xs">
-              <button class="duel-mode-pill active" data-mode="Bug Hunt" onclick="App.setDuelMode('Bug Hunt')">Bug Hunt</button>
-              <button class="duel-mode-pill" data-mode="Code Golf" onclick="App.setDuelMode('Code Golf')">Code Golf</button>
-              <button class="duel-mode-pill" data-mode="Clean Pass" onclick="App.setDuelMode('Clean Pass')">Clean Pass</button>
-            </div>
-
-            <!-- Duel Timer (02:00 countdown) -->
-            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface border border-border font-mono text-xs">
-              <span class="w-2 h-2 rounded-full bg-emerald animate-pulse" id="duel-timer-dot"></span>
-              <span class="text-text-muted text-[10px]">TIME LEFT:</span>
-              <span id="duel-countdown" class="font-bold text-text-primary tabular-nums">02:00</span>
-              <button class="text-text-muted hover:text-text-primary ml-1" onclick="App.resetDuelTimer()" title="Restart Duel Clock">
-                <i data-lucide="rotate-ccw" class="w-3 h-3"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- Center: Rival Ghost Telemetry Progress Bar -->
-          <div class="flex-1 max-w-md bg-surface border border-border rounded px-3 py-1.5 flex flex-col justify-center">
-            <div class="flex items-center justify-between text-[11px] mb-1">
-              <div class="flex items-center gap-1.5">
-                <span class="text-crimson font-mono font-semibold">VS</span>
-                <span id="rival-alias" class="font-mono text-text-primary font-medium">Spectre_578</span>
-                <span id="rival-rating" class="text-[10px] text-text-muted font-mono">• Rating 1486</span>
-              </div>
-              <span id="rival-stage-badge" class="text-[10px] font-mono text-amber">Reading Code...</span>
-            </div>
-            <!-- Progress Bar Track -->
-            <div class="w-full h-1.5 bg-canvas rounded-full overflow-hidden border border-border-subtle relative">
-              <div id="rival-progress-bar" class="h-full bg-crimson transition-all duration-700 ease-out" style="width: 15%;"></div>
-            </div>
-          </div>
-
-          <!-- Right: Anonymous SOS Flare Button -->
-          <div class="flex items-center gap-2">
-            <button id="btn-top-sos-flare" class="btn-ghost text-xs border border-amber/30 text-amber hover:bg-amber/10 py-1.5 px-3 rounded flex items-center gap-1.5" onclick="App.openCreateFlareModal()">
-              <i data-lucide="life-buoy" class="w-3.5 h-3.5"></i>
-              <span>Drop Anonymous SOS</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Duel Victory / Defeat Announcement Banner (Hidden by default) -->
-        <div id="duel-verdict-banner" class="hidden px-4 py-2 border-b text-xs flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <i id="duel-verdict-icon" data-lucide="trophy" class="w-4 h-4"></i>
-            <span id="duel-verdict-text" class="font-semibold"></span>
-          </div>
-          <button class="btn-ghost text-xs py-0.5 px-2" onclick="document.getElementById('duel-verdict-banner').classList.add('hidden')">Dismiss</button>
-        </div>
-
-        <!-- 3-Pane Coding Arena -->
-        <div class="flex-1 overflow-hidden flex">
-          
-          <!-- Left Pane: Problem List & Problem Statement (26% width) -->
-          <div class="w-[26%] h-full border-r border-border flex flex-col bg-panel shrink-0">
-            <!-- Problem Selector Header -->
-            <div class="p-3 border-b border-border">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider">DUEL TARGETS</span>
-                <span id="lab-problems-count" class="text-[11px] font-mono text-text-secondary">3 active</span>
-              </div>
-              <!-- Problem Tabs List -->
-              <div id="problem-cards-list" class="space-y-1.5 max-h-[160px] overflow-y-auto pr-1"></div>
-            </div>
-
-            <!-- Problem Description Pane -->
-            <div class="flex-1 overflow-y-auto p-4 space-y-3">
-              <div>
-                <div class="flex items-center gap-2 mb-1">
-                  <span id="pane-prob-difficulty" class="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-emerald/10 text-emerald border border-emerald/20">beginner</span>
-                  <span id="pane-prob-rating" class="text-[10px] font-mono text-text-muted">Target Rating: 1250</span>
-                </div>
-                <h3 id="pane-prob-title" class="text-sm font-semibold text-text-primary">Pointer Swap</h3>
-              </div>
-
-              <div class="text-xs text-text-secondary leading-relaxed" id="pane-prob-desc">
-                Write a C++ function <code>void swap(int* a, int* b)</code> that swaps the values stored at two integer pointers without using an unallocated pointer.
-              </div>
-
-              <!-- Sample Input / Output -->
-              <div class="space-y-2 pt-2 border-t border-border">
-                <div>
-                  <label class="field-label text-[10px]">Sample Input</label>
-                  <pre id="pane-prob-input" class="p-2 rounded bg-surface border border-border text-[11px] font-mono text-text-secondary overflow-x-auto">5 10</pre>
-                </div>
-                <div>
-                  <label class="field-label text-[10px]">Sample Output</label>
-                  <pre id="pane-prob-output" class="p-2 rounded bg-surface border border-border text-[11px] font-mono text-text-primary overflow-x-auto">10 5</pre>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Center Pane: Monospace Code Editor (44% width) -->
-          <div class="w-[44%] h-full border-r border-border flex flex-col bg-surface">
-            <!-- Editor Sub-Toolbar -->
-            <div class="h-10 border-b border-border flex items-center justify-between px-3 bg-toolbar/60 shrink-0">
-              <div class="flex items-center gap-2">
-                <span id="editor-lang-badge" class="lang-badge">C++</span>
-                <span class="text-[11px] text-text-muted font-mono" id="editor-char-counter">0 chars</span>
-                <span id="student-trust-badge" class="text-[10px] font-mono text-emerald">100.0% Trust</span>
-              </div>
-              <div class="flex items-center gap-1.5">
-                <button class="btn-ghost text-xs" onclick="App.loadBuggyCode()">
-                  <i data-lucide="bug" class="w-3 h-3 text-crimson"></i> Load Buggy
-                </button>
-                <button class="btn-ghost text-xs" onclick="App.loadOptimalCode()">
-                  <i data-lucide="check-circle-2" class="w-3 h-3 text-emerald"></i> Load Optimal
-                </button>
-              </div>
-            </div>
-
-            <!-- Code Editor Body with Line Numbers (Strictly aligned 44px gutter with 24px line-height) -->
-            <div class="flex-1 overflow-hidden relative">
-              <!-- Anti-Cheat Instant Focus Lockout Overlay -->
-              <div id="student-lockout-overlay" class="hidden absolute inset-0 z-30 bg-rose-950/85 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center">
-                <div class="p-3 bg-zinc-950/90 border border-rose-600 rounded-lg text-rose-200 font-mono text-xs space-y-2 max-w-xs shadow-2xl">
-                  <div class="flex items-center justify-center gap-1.5 font-bold text-rose-400 uppercase tracking-wide text-[11px]">
-                    <i data-lucide="shield-alert" class="w-4 h-4 text-rose-500 animate-bounce"></i>
-                    <span>Anti-Cheat Focus Lockout</span>
-                  </div>
-                  <p id="student-lockout-reason" class="text-[11px] text-zinc-300">Window focus lost / tab switch detected.</p>
-                  <div class="text-[11px] bg-rose-900/40 border border-rose-800/60 rounded py-1.5 px-3 font-mono">
-                    Editor frozen. Resuming in <strong id="student-lockout-timer" class="text-rose-100 font-bold text-sm">4</strong>s...
-                  </div>
-                  <p class="text-[9px] text-zinc-500">Strike recorded. 3 strikes result in permanent duel disqualification.</p>
-                </div>
-              </div>
-
-              <div class="code-editor-wrap">
-                <div id="line-numbers" class="line-numbers" aria-hidden="true">1</div>
-                <textarea id="code-editor" class="code-editor" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="// Write or inspect your code solution here..."></textarea>
-              </div>
-            </div>
-
-            <!-- Editor Footer CTA Bar -->
-            <div class="h-12 border-t border-border flex items-center justify-between px-4 bg-toolbar/60 shrink-0">
-              <div class="flex items-center gap-2 text-xs text-text-muted">
-                <i data-lucide="shield" class="w-3.5 h-3.5 text-emerald"></i>
-                <span>Execution profiled via AST &amp; LLM</span>
-              </div>
-              <button id="btn-run-diagnose" class="btn-primary text-xs" onclick="App.runCodeDiagnostic()">
-                <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
-                <span class="btn-label font-semibold">Run &amp; Profile Solution</span>
-                <span class="spinner hidden"></span>
-              </button>
-            </div>
-          </div>
-
-          <!-- Right Pane: Diagnostic & Performance Profiler Panel (30% width) -->
-          <div class="w-[30%] h-full flex flex-col bg-panel overflow-y-auto p-4 space-y-4 shrink-0">
-            
-            <!-- Performance Profiler Strip -->
-            <div>
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider">PERFORMANCE PROFILER</span>
-                <span id="test-runner-verdict" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-panel border border-border text-text-secondary">Ready</span>
-              </div>
-
-              <!-- Metric Cards Grid (Runtime, Memory, Time Complexity, Space Complexity) -->
-              <div class="grid grid-cols-2 gap-2 mb-3">
-                <div class="p-2.5 rounded bg-surface border border-border">
-                  <span class="text-[10px] text-text-muted uppercase font-mono block">Runtime</span>
-                  <span id="metric-runtime" class="text-sm font-mono font-bold text-text-primary tabular-nums">-- ms</span>
-                </div>
-                <div class="p-2.5 rounded bg-surface border border-border">
-                  <span class="text-[10px] text-text-muted uppercase font-mono block">Memory</span>
-                  <span id="metric-memory" class="text-sm font-mono font-bold text-text-primary tabular-nums">-- KB</span>
-                </div>
-                <div class="p-2.5 rounded bg-surface border border-border">
-                  <span class="text-[10px] text-text-muted uppercase font-mono block">Time Complexity</span>
-                  <span id="metric-time-comp" class="text-sm font-mono font-bold text-emerald">--</span>
-                </div>
-                <div class="p-2.5 rounded bg-surface border border-border">
-                  <span class="text-[10px] text-text-muted uppercase font-mono block">Space Complexity</span>
-                  <span id="metric-space-comp" class="text-sm font-mono font-bold text-emerald">--</span>
-                </div>
-              </div>
-
-              <!-- Optimization Score Bar -->
-              <div class="p-2.5 rounded bg-surface border border-border space-y-1.5">
-                <div class="flex items-center justify-between text-xs">
-                  <span class="text-text-muted font-medium">Optimization Score</span>
-                  <span id="opt-score-label" class="font-mono font-bold text-text-primary tabular-nums">--/100</span>
-                </div>
-                <div class="w-full h-1.5 bg-canvas rounded-full overflow-hidden border border-border-subtle">
-                  <div id="opt-score-bar" class="h-full bg-emerald transition-all duration-500 ease-out" style="width: 0%;"></div>
-                </div>
-                <span id="opt-beats-note" class="text-[10px] text-text-muted font-mono block">Beats --% of ghosts</span>
-              </div>
-            </div>
-
-            <!-- Logistic Rating Delta Card -->
-            <div id="rating-delta-card" class="hidden p-3 rounded border text-xs flex items-center justify-between">
-              <span class="text-text-secondary font-medium">Logistic Rating Impact:</span>
-              <span id="rating-delta-readout" class="font-mono font-bold text-sm tabular-nums"></span>
-            </div>
-
-            <!-- Test Cases Simulation List -->
-            <div>
-              <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider block mb-2">TEST ASSERTIONS</span>
-              <div id="test-cases-container" class="space-y-1.5">
-                <div class="test-row pending">
-                  <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-zinc-600"></span>
-                    <span class="text-xs font-mono">Case 1 (Boundary Invariant)</span>
-                  </div>
-                  <span class="text-[10px] text-text-muted font-mono">Idle</span>
-                </div>
-                <div class="test-row pending">
-                  <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-zinc-600"></span>
-                    <span class="text-xs font-mono">Case 2 (Nominal Execution)</span>
-                  </div>
-                  <span class="text-[10px] text-text-muted font-mono">Idle</span>
-                </div>
-                <div class="test-row pending">
-                  <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-zinc-600"></span>
-                    <span class="text-xs font-mono">Case 3 (Memory Footprint)</span>
-                  </div>
-                  <span class="text-[10px] text-text-muted font-mono">Idle</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- AI Socratic Diagnostic Box -->
-            <div class="pt-3 border-t border-border">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-[11px] font-semibold text-text-muted uppercase tracking-wider">SOCRATIC DIAGNOSTIC</span>
-                <button id="btn-side-sos" class="text-[11px] text-amber hover:underline flex items-center gap-1" onclick="App.openCreateFlareModal()">
-                  <i data-lucide="life-buoy" class="w-3 h-3"></i> Ask Peers for Hint
-                </button>
-              </div>
-              <div id="lab-diagnostic-content" class="diagnostic-empty">
-                <i data-lucide="scan-line" class="w-5 h-5 text-text-muted mb-2"></i>
-                <p class="text-xs text-text-muted text-center">Submit your code to generate Big-O metrics and Socratic evaluation.</p>
-              </div>
-            </div>
-
-          </div>
-
+          <button id="btn-preset-array" class="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-amber-400 px-2 py-1 rounded text-[10px] font-mono" title="Load sample bug to test invariant detection and k-anonymity unmasking">
+            Load Buggy Sample
+          </button>
+          <button id="btn-preset-clean" class="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-emerald-400 px-2 py-1 rounded text-[10px] font-mono" title="Load reference optimal passing solution">
+            Load Solution
+          </button>
         </div>
       </div>
 
-      <!-- TAB 2: GHOST CHANNELS (Multi-Channel Anonymous Chat) -->
-      <div id="subview-student-channels" class="workspace-subview flex-1 overflow-hidden flex hidden">
-        <!-- Channels Sidebar -->
-        <div class="w-56 h-full bg-panel border-r border-border flex flex-col shrink-0">
-          <div class="p-3 border-b border-border flex items-center justify-between">
-            <span class="text-[11px] font-semibold uppercase tracking-wider text-text-muted">CHANNELS</span>
-            <span class="text-[10px] font-mono text-emerald bg-emerald/10 px-1.5 py-0.5 rounded border border-emerald/20">Live</span>
-          </div>
-          <div class="p-2 space-y-1 overflow-y-auto flex-1">
-            <button class="channel-tab active" data-channel="#announcements" onclick="App.selectChannel('#announcements')">
-              <i data-lucide="megaphone" class="w-3.5 h-3.5 text-amber"></i>
-              <span class="truncate"># announcements</span>
-              <span class="channel-badge-faculty">FACULTY</span>
-            </button>
-            <button class="channel-tab" data-channel="#general-chat" onclick="App.selectChannel('#general-chat')">
-              <i data-lucide="hash" class="w-3.5 h-3.5 text-text-muted"></i>
-              <span class="truncate"># general-chat</span>
-            </button>
-            <button class="channel-tab" data-channel="#cpp-guild" onclick="App.selectChannel('#cpp-guild')">
-              <i data-lucide="hash" class="w-3.5 h-3.5 text-text-muted"></i>
-              <span class="truncate"># cpp-guild</span>
-            </button>
-            <button class="channel-tab" data-channel="#python-den" onclick="App.selectChannel('#python-den')">
-              <i data-lucide="hash" class="w-3.5 h-3.5 text-text-muted"></i>
-              <span class="truncate"># python-den</span>
-            </button>
-          </div>
+      <!-- Problem Specification Banner -->
+      <div id="problem-info-bar" class="bg-[#0e0e11] border-b border-zinc-800 px-3 py-1.5 flex items-center justify-between text-[11px] font-mono shrink-0">
+        <div class="flex items-center gap-2 truncate flex-1">
+          <span id="problem-title" class="font-bold text-zinc-200">Bounded Array Sum</span>
+          <span id="problem-badge" class="px-1.5 py-0.5 rounded text-[10px] bg-amber-950 text-amber-400 border border-amber-800">ARRAY_OUT_OF_BOUNDS • Easy</span>
+          <span id="problem-desc" class="text-zinc-400 text-[10px] truncate">Sum array elements strictly respecting boundary invariants [0, N-1].</span>
         </div>
+      </div>
 
-        <!-- Chat Feed & Composer -->
-        <div class="flex-1 h-full flex flex-col bg-surface">
-          <!-- Channel Header -->
-          <div class="h-12 border-b border-border flex items-center justify-between px-5 bg-panel shrink-0">
+      <!-- Side-by-Side Dual Editors -->
+      <div class="flex-1 flex overflow-hidden border-b border-zinc-800">
+        <!-- Active Student Editor -->
+        <div class="w-1/2 flex flex-col border-r border-zinc-800 bg-[#0C0C0E]">
+          <div class="h-6 bg-zinc-900/60 border-b border-zinc-800/80 px-2 flex items-center justify-between text-[10px] font-mono text-zinc-400">
+            <span id="student-pane-header">You (Active Student Workspace)</span>
             <div class="flex items-center gap-2">
-              <i data-lucide="hash" class="w-4 h-4 text-emerald" id="chat-header-icon"></i>
-              <h3 id="chat-header-title" class="text-xs font-semibold text-text-primary"># announcements</h3>
-              <span id="chat-header-desc" class="text-[11px] text-text-muted">• Official Faculty Broadcasts</span>
-            </div>
-            <button class="btn-ghost text-xs" onclick="App.refreshCurrentChannel()" title="Refresh messages">
-              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-            </button>
-          </div>
-
-          <!-- Messages Container -->
-          <div id="channels-messages-feed" class="flex-1 overflow-y-auto p-4 space-y-3">
-            <div class="text-center text-xs text-text-muted py-8">Loading channel messages...</div>
-          </div>
-
-          <!-- Message Composer Area -->
-          <div class="p-3 border-t border-border bg-panel shrink-0">
-            <form id="form-chat-send" onsubmit="App.handleSendChatMessage(event)" class="flex items-center gap-2">
-              <input id="chat-input-text" type="text" class="field-input text-xs font-mono flex-1" placeholder="Type a message as your ghost alias..." autocomplete="off">
-              <button type="submit" id="btn-chat-send" class="btn-primary text-xs px-4 h-[34px]">
-                <i data-lucide="send" class="w-3.5 h-3.5"></i>
-                <span>Send</span>
-              </button>
-            </form>
-            <div id="chat-disabled-banner" class="hidden text-center text-xs text-amber py-1.5 font-medium">
-              <i data-lucide="lock" class="w-3 h-3 inline mr-1"></i> Only faculty can post in #announcements
+              <span id="student-progress-label" class="text-emerald-500 text-[9px]">Editor Active</span>
+              <span class="text-emerald-500/70 text-[9px]">• Protected</span>
             </div>
           </div>
+          <div class="w-full bg-zinc-900 h-0.5">
+            <div id="student-progress-bar" class="h-0.5 bg-emerald-500 w-0 transition-all duration-150"></div>
+          </div>
+          <textarea id="editor-student" spellcheck="false" autocomplete="off" autocapitalize="off" class="flex-1 w-full bg-transparent text-zinc-200 font-mono text-xs p-3 outline-none resize-none custom-scroll leading-relaxed" placeholder="// Select a challenge problem above and write your verified solution here..."></textarea>
+        </div>
+
+        <!-- Competitor Ghost Replay Pane -->
+        <div class="w-1/2 flex flex-col bg-[#0A0A0C]">
+          <div class="h-6 bg-zinc-900/60 border-b border-zinc-800/80 px-2 flex items-center justify-between text-[10px] font-mono text-zinc-400">
+            <span id="rival-pane-header">Rival Ghost (Standby)</span>
+            <span id="replay-progress-label" class="text-cyan-400 font-bold">0%</span>
+          </div>
+          <div class="w-full bg-zinc-900 h-0.5">
+            <div id="rival-progress-bar" class="h-0.5 bg-cyan-500 w-0 transition-all duration-150"></div>
+          </div>
+          <textarea id="editor-competitor" readonly class="flex-1 w-full bg-transparent text-emerald-400/90 font-mono text-xs p-3 outline-none resize-none custom-scroll leading-relaxed select-none cursor-default" placeholder="// Competitor live stream will appear here when duel begins..."></textarea>
         </div>
       </div>
 
-      <!-- TAB 3: ANONYMOUS SOS FEED (Peer Socratic Hints) -->
-      <div id="subview-student-sos" class="workspace-subview flex-1 overflow-y-auto p-6 hidden">
-        <div class="max-w-4xl mx-auto space-y-4">
-          <!-- Header Strip -->
-          <div class="flex items-center justify-between">
-            <div>
-              <h2 class="text-base font-semibold">Anonymous Peer SOS Flare Feed</h2>
-              <p class="text-xs text-text-muted mt-0.5">Stuck ghosts drop flares. Peers post Socratic hints (not code dumps) to earn +8 Mentor Rating each.</p>
-            </div>
-            <div class="flex items-center gap-2">
-              <button id="btn-feed-create-flare" class="btn-primary text-xs" onclick="App.openCreateFlareModal()">
-                <i data-lucide="flame" class="w-3.5 h-3.5 text-amber"></i>
-                <span>Drop SOS Flare</span>
-              </button>
-              <button class="btn-ghost text-xs" onclick="App.loadSosFlares()">
-                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- Governance Alert if Disabled -->
-          <div id="sos-disabled-alert" class="hidden p-3 rounded bg-amber/10 border border-amber/30 text-amber text-xs flex items-center gap-2">
-            <i data-lucide="alert-triangle" class="w-4 h-4 shrink-0"></i>
-            <span>SOS Flares are currently disabled by Faculty for live lab assessment. You cannot drop new flares right now.</span>
-          </div>
-
-          <!-- Flares List -->
-          <div id="sos-flares-feed" class="space-y-4">
-            <div class="p-8 text-center text-xs text-text-muted">Loading SOS flares...</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB 4: STANDINGS & PLACEMENT MERIT VAULT -->
-      <div id="subview-student-standings" class="workspace-subview flex-1 overflow-y-auto p-6 hidden">
-        <div class="max-w-5xl mx-auto space-y-6">
-          
-          <!-- Top Section: Leaderboard -->
-          <div>
-            <div class="flex items-center justify-between mb-3">
-              <div>
-                <h2 class="text-base font-semibold">Cohort Standings — Section CSE-1C</h2>
-                <p class="text-xs text-text-muted mt-0.5">Real identities permanently stripped. Only cryptographic aliases and verified ratings appear.</p>
-              </div>
-              <span class="text-xs font-mono text-emerald bg-emerald/10 border border-emerald/20 px-2 py-1 rounded">Rank #1: Shadow_188 (Rating 1540)</span>
-            </div>
-
-            <!-- Leaderboard Table -->
-            <div class="card overflow-hidden">
-              <div id="student-leaderboard-table-wrap">
-                <div class="p-8 text-center text-xs text-text-muted">Loading leaderboard standings...</div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Bottom Section: Placement Merit Vault Verifier -->
-          <div class="pt-4 border-t border-border">
-            <div class="mb-3">
-              <h3 class="text-sm font-semibold flex items-center gap-2">
-                <i data-lucide="award" class="w-4 h-4 text-emerald"></i>
-                Placement Merit Vault (Zero-Knowledge Verifier)
-              </h3>
-              <p class="text-xs text-text-muted">Prove cryptographic ownership of your ghost alias to recruiters without revealing other students' identities.</p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <!-- Verifier Inputs -->
-              <div class="card p-4 space-y-3">
-                <div>
-                  <label class="field-label">Institutional Roll Number</label>
-                  <input id="vault-input-roll" type="text" class="field-input font-mono" readonly>
-                </div>
-                <div>
-                  <label class="field-label">Private Salt</label>
-                  <input id="vault-input-salt" type="password" class="field-input font-mono" placeholder="Enter salt to claim...">
-                </div>
-                <div>
-                  <label class="field-label">Target Ghost Alias</label>
-                  <input id="vault-input-alias" type="text" class="field-input font-mono" readonly>
-                </div>
-                <button id="btn-vault-verify" class="btn-primary w-full text-xs" onclick="App.runVaultVerification()">
-                  <i data-lucide="shield-check" class="w-4 h-4"></i>
-                  <span class="btn-label font-semibold">Verify SHA-256 Commitment</span>
-                  <span class="spinner hidden"></span>
-                </button>
-              </div>
-
-              <!-- Printable Credential Box -->
-              <div class="card p-4 flex flex-col justify-between">
-                <div id="vault-credential-render" class="credential-placeholder">
-                  <div class="formula-box mb-3">
-                    <p class="font-mono text-xs text-text-secondary text-center leading-relaxed">
-                      SHA256( Roll_No <span class="text-text-muted">||</span> Secret_Salt )<br>
-                      <span class="text-text-muted">==</span><br>
-                      Stored_Ghost_Hash
-                    </p>
-                  </div>
-                  <p class="text-xs text-text-muted text-center leading-relaxed">
-                    Click <strong>"Verify SHA-256 Commitment"</strong> on the left to generate your verified, print-ready institutional merit credential.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-
-      <!-- ─── FACULTY WORKSPACE VIEWS ─── -->
-
-      <!-- TAB 1: FACULTY k-ANONYMITY TELEMETRY & LAB GOVERNANCE -->
-      <div id="subview-faculty-telemetry" class="workspace-subview flex-1 overflow-y-auto p-6 hidden">
-        <div class="max-w-6xl mx-auto space-y-4">
-          <!-- Control Strip -->
-          <div class="control-strip">
-            <div class="flex flex-wrap items-center justify-between gap-4">
-              <!-- Slider -->
-              <div class="flex items-center gap-4">
-                <label class="text-xs font-medium text-text-secondary">k-Anonymity Threshold:</label>
-                <input id="fac-k-slider" type="range" min="2" max="10" value="5" class="k-slider" oninput="App.onFacultyKSliderChange()">
-                <span id="fac-k-readout" class="font-mono text-sm font-semibold text-text-primary tabular-nums w-12">k = 5</span>
-              </div>
-
-              <!-- Lab Governance SOS Toggle Switch -->
-              <div class="flex items-center gap-2 bg-surface px-3 py-1.5 rounded border border-border">
-                <i data-lucide="life-buoy" class="w-3.5 h-3.5 text-amber"></i>
-                <span class="text-xs font-medium text-text-primary">Allow Peer SOS Flares:</span>
-                <button id="fac-sos-toggle" class="toggle-switch ml-1" role="switch" aria-checked="true" onclick="App.toggleFacultySosGovernance()">
-                  <span class="toggle-knob"></span>
-                </button>
-                <span id="fac-sos-status" class="text-xs font-mono text-emerald">Enabled</span>
-              </div>
-
-              <!-- Judge Audit Switch -->
-              <div class="flex items-center gap-3">
-                <span id="fac-audit-label" class="audit-label safe">
-                  <i data-lucide="shield-check" class="w-3 h-3"></i>
-                  k-Shield Active
-                </span>
-                <button id="fac-audit-toggle" class="toggle-switch" role="switch" aria-checked="false" onclick="App.toggleFacultyAuditMode()">
-                  <span class="toggle-knob"></span>
-                </button>
-                <span class="text-xs text-text-muted">Judge Audit Mode (Unmasked)</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Main Grid -->
-          <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
-            <!-- Left: Bottleneck Cards (3 cols) -->
-            <div id="fac-clusters-container" class="lg:col-span-3 space-y-3">
-              <div class="p-8 text-center text-xs text-text-muted">Loading telemetry clusters...</div>
-            </div>
-
-            <!-- Right: Chart (2 cols) -->
-            <div class="lg:col-span-2">
-              <div class="card p-4 h-full min-h-[380px] flex flex-col">
-                <div class="flex items-center gap-2 mb-3">
-                  <i data-lucide="bar-chart-2" class="w-4 h-4 text-text-muted"></i>
-                  <h3 class="text-xs font-semibold uppercase tracking-wider text-text-muted">Cohort Failure Distribution</h3>
-                </div>
-                <div class="relative flex-1" style="min-height: 320px;">
-                  <canvas id="faculty-chart-canvas"></canvas>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB 2: FACULTY BROADCAST & CHANNELS MONITOR -->
-      <div id="subview-faculty-broadcast" class="workspace-subview flex-1 overflow-hidden flex hidden">
-        <!-- Broadcast Composer Left Pane -->
-        <div class="w-80 h-full bg-panel border-r border-border p-4 flex flex-col justify-between shrink-0">
-          <div>
-            <div class="flex items-center gap-2 mb-2">
-              <i data-lucide="radio" class="w-4 h-4 text-amber"></i>
-              <h3 class="text-sm font-semibold">Faculty Broadcast</h3>
-            </div>
-            <p class="text-xs text-text-muted mb-4 leading-relaxed">
-              Post official notices to <code>#announcements</code>. Students cannot reply directly to this channel.
-            </p>
-
-            <form id="form-faculty-announcement" onsubmit="App.handleFacultyBroadcast(event)" class="space-y-3">
-              <div>
-                <label class="field-label">Broadcast Channel</label>
-                <input type="text" class="field-input font-mono text-xs" value="#announcements" readonly>
-              </div>
-              <div>
-                <label class="field-label">Announcement Text</label>
-                <textarea id="faculty-broadcast-text" class="field-input h-28 py-2 text-xs" placeholder="e.g. Lab Assessment begins in 10 minutes. Peer SOS Flares are now disabled." required></textarea>
-              </div>
-              <button type="submit" id="btn-broadcast-send" class="btn-primary w-full text-xs">
-                <i data-lucide="send" class="w-3.5 h-3.5"></i>
-                <span class="btn-label font-semibold">Broadcast to Cohort</span>
-                <span class="spinner hidden"></span>
-              </button>
-            </form>
-          </div>
-
-          <div class="p-3 rounded bg-surface border border-border text-[11px] text-text-muted">
-            <span class="text-emerald font-semibold">Institutional Seal:</span> Sent under your verified faculty name.
-          </div>
-        </div>
-
-        <!-- Channels Viewer Right Pane -->
-        <div class="flex-1 h-full flex flex-col bg-surface">
-          <div class="h-12 border-b border-border flex items-center justify-between px-5 bg-panel shrink-0">
-            <div class="flex items-center gap-2">
-              <span class="text-xs font-semibold text-text-primary">Monitor Channel:</span>
-              <select id="faculty-channel-select" class="field-input w-44 h-7 text-xs font-mono" onchange="App.onFacultyChannelSelect(this.value)">
-                <option value="#announcements"># announcements</option>
-                <option value="#general-chat"># general-chat</option>
-                <option value="#cpp-guild"># cpp-guild</option>
-                <option value="#python-den"># python-den</option>
-              </select>
-            </div>
-            <button class="btn-ghost text-xs" onclick="App.refreshFacultyChannelFeed()">
-              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-            </button>
-          </div>
-
-          <div id="faculty-channel-messages-feed" class="flex-1 overflow-y-auto p-4 space-y-3">
-            <div class="text-center text-xs text-text-muted py-8">Select a channel to monitor.</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB 3: FACULTY PUBLISH LAB ASSIGNMENT -->
-      <div id="subview-faculty-assignment" class="workspace-subview flex-1 overflow-y-auto p-6 hidden">
-        <div class="max-w-2xl mx-auto space-y-4">
-          <div>
-            <h2 class="text-base font-semibold">Publish Lab Assignment</h2>
-            <p class="text-xs text-text-muted mt-0.5">Author a new C++ or Python systems problem. It immediately reflects dynamically inside the Student Duel Arena.</p>
-          </div>
-
-          <form id="form-publish-assignment" onsubmit="App.handleCreateProblem(event)" class="card p-5 space-y-3">
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="field-label">Problem Title</label>
-                <input id="create-title" type="text" class="field-input font-medium" placeholder="e.g. Memory Leak Detection in BST" required>
-              </div>
-              <div>
-                <label class="field-label">Language</label>
-                <select id="create-language" class="field-input text-xs">
-                  <option value="cpp">C++ (GCC 13 / C++20)</option>
-                  <option value="c">C (GCC 13 / C17)</option>
-                  <option value="python">Python 3.12</option>
-                  <option value="java">Java 21 (OpenJDK)</option>
-                  <option value="javascript">JavaScript (Node.js 20)</option>
-                  <option value="typescript">TypeScript 5.3</option>
-                  <option value="go">Go 1.22</option>
-                  <option value="rust">Rust 1.76</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-3 gap-3">
-              <div>
-                <label class="field-label">Difficulty</label>
-                <select id="create-difficulty" class="field-input text-xs">
-                  <option value="beginner">Beginner</option>
-                  <option value="intermediate" selected>Intermediate</option>
-                  <option value="advanced">Advanced</option>
-                </select>
-              </div>
-              <div>
-                <label class="field-label">Topic</label>
-                <input id="create-topic" type="text" class="field-input" placeholder="e.g. Trees & Dynamic Memory" required>
-              </div>
-              <div>
-                <label class="field-label">Concept Tag</label>
-                <input id="create-concept" type="text" class="field-input font-mono uppercase" placeholder="e.g. DANGLING_NODE_POINTER" required>
-              </div>
-            </div>
-
-            <div>
-              <label class="field-label">Problem Statement / Specification</label>
-              <textarea id="create-desc" class="field-input h-20 py-2" placeholder="Describe the constraints and invariant requirements..." required></textarea>
-            </div>
-
-            <div class="grid grid-cols-2 gap-3">
-              <div>
-                <label class="field-label">Sample Input</label>
-                <input id="create-input" type="text" class="field-input font-mono" placeholder="e.g. 5\n1 2 3 4 5">
-              </div>
-              <div>
-                <label class="field-label">Sample Output</label>
-                <input id="create-output" type="text" class="field-input font-mono" placeholder="e.g. Valid BST">
-              </div>
-            </div>
-
-            <div>
-              <label class="field-label">Starter / Buggy Code Attempt (Demonstrates Misconception)</label>
-              <textarea id="create-buggy" class="field-input h-24 font-mono text-xs py-2" placeholder="// Starter code with specific conceptual bug..." required></textarea>
-            </div>
-
-            <div>
-              <label class="field-label">Optimal Solution (Reference)</label>
-              <textarea id="create-fixed" class="field-input h-24 font-mono text-xs py-2" placeholder="// Complete working implementation..." required></textarea>
-            </div>
-
-            <button type="submit" id="btn-publish-problem" class="btn-primary w-full mt-2">
-              <i data-lucide="upload-cloud" class="w-4 h-4"></i>
-              <span class="btn-label font-semibold">Publish Assignment to Student Duel Arena</span>
-              <span class="spinner hidden"></span>
-            </button>
-          </form>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════════════════════
-       MODAL 1: 10-MINUTE AI REMEDIAL PLAN
-       ═══════════════════════════════════════════════════════════════ -->
-  <div id="remedial-modal" class="modal-overlay hidden" onclick="App.closeRemedialModal(event)">
-    <div class="modal-drawer" onclick="event.stopPropagation()">
-      <div class="flex items-center justify-between px-5 h-12 border-b border-border bg-panel">
-        <div class="flex items-center gap-2">
-          <i data-lucide="book-open" class="w-4 h-4 text-emerald"></i>
-          <h2 class="text-sm font-semibold">10-Minute AI Remedial Micro-Lecture Plan</h2>
-        </div>
-        <button class="btn-ghost" onclick="App.closeRemedialModal()">
-          <i data-lucide="x" class="w-4 h-4"></i>
+      <!-- Action Bar & Live Anti-Cheat Toast Banner -->
+      <div class="h-10 border-b border-zinc-800 bg-[#111113] px-3 flex items-center justify-between shrink-0">
+        <button id="btn-submit-code" class="bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold px-4 py-1 rounded text-xs font-mono transition-colors">
+          Submit Code
         </button>
-      </div>
-      <div id="remedial-content" class="p-5 overflow-y-auto" style="max-height: calc(100vh - 160px);"></div>
-    </div>
-  </div>
 
-  <!-- ═══════════════════════════════════════════════════════════════
-       MODAL 2: DROP ANONYMOUS SOS FLARE MODAL
-       ═══════════════════════════════════════════════════════════════ -->
-  <div id="sos-create-modal" class="modal-overlay hidden" onclick="App.closeCreateFlareModal(event)">
-    <div class="card max-w-lg w-full p-5 space-y-3 bg-panel mx-4" onclick="event.stopPropagation()">
-      <div class="flex items-center justify-between pb-2 border-b border-border">
-        <div class="flex items-center gap-2">
-          <i data-lucide="life-buoy" class="w-4 h-4 text-amber"></i>
-          <h3 class="text-sm font-semibold">Drop Anonymous SOS Flare</h3>
+        <div id="toast-anti-cheat" class="font-mono text-[10px] text-zinc-400 flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+          <span id="toast-anti-cheat-text">Anti-Cheat Active • Paste blocked: 0 • Tab strikes: 0/3</span>
         </div>
-        <button class="btn-ghost" onclick="App.closeCreateFlareModal()">
-          <i data-lucide="x" class="w-4 h-4"></i>
-        </button>
       </div>
-      <p class="text-xs text-text-muted">
-        Broadcast your failing snippet to the cohort feed anonymously. Peers provide Socratic nudges to earn +8 Mentor Rating.
-      </p>
-      <form id="form-create-flare" onsubmit="App.handleCreateFlareSubmit(event)" class="space-y-3">
+
+      <!-- Socratic AI Coach Diagnostic Card -->
+      <div class="h-36 bg-[#111113] p-3 overflow-y-auto custom-scroll flex flex-col justify-between shrink-0">
         <div>
-          <label class="field-label">Problem Title</label>
-          <input id="modal-flare-title" type="text" class="field-input font-medium" readonly>
-        </div>
-        <div>
-          <label class="field-label">Code Snippet Stuck On</label>
-          <textarea id="modal-flare-code" class="field-input h-32 font-mono text-xs py-2" required></textarea>
-        </div>
-        <button type="submit" id="btn-submit-flare" class="btn-primary w-full text-xs">
-          <i data-lucide="flame" class="w-4 h-4 text-amber"></i>
-          <span class="btn-label font-semibold">Drop SOS Flare to Cohort</span>
-          <span class="spinner hidden"></span>
-        </button>
-      </form>
-    </div>
-  </div>
+          <div class="flex items-center justify-between mb-1.5">
+            <div class="flex items-center gap-2">
+              <span class="font-mono text-[11px] font-bold text-zinc-300">AI Socratic Diagnostic</span>
+              <span id="diag-badge-tag" class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-zinc-800 text-zinc-400">IDLE</span>
+              <span id="diag-badge-complexity" class="px-1.5 py-0.5 rounded text-[9px] font-mono bg-zinc-900 text-zinc-400 border border-zinc-800">Complexity: Standby</span>
+              <span id="diag-badge-source" class="text-[9px] font-mono text-zinc-500">source: standby</span>
+            </div>
 
-  <!-- ═══════════════════════════════════════════════════════════════
-       VIEW 3: SPLIT-SCREEN 1v1 GHOST DUEL ARENA (SIDE-BY-SIDE RIVAL + GUARD)
-       ═══════════════════════════════════════════════════════════════ -->
-  <div id="view-split-arena" class="h-full w-full flex flex-col overflow-hidden hidden bg-[#09090B] fixed inset-0 z-40 select-none text-xs">
-    <!-- TOP BAR -->
-    <header class="h-14 border-b border-zinc-800 bg-[#111113] px-4 flex items-center justify-between shrink-0 gap-4">
-      <div class="flex items-center gap-3 shrink-0">
-        <button id="btn-split-back" type="button" class="flex items-center gap-1.5 px-3 py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-mono text-xs cursor-pointer border border-zinc-700 transition-colors" onclick="App.showHomePortal()">
-          <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
-          <span>Portal</span>
-        </button>
-        <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
-        <span class="font-bold tracking-tight text-sm text-zinc-100 flex items-center gap-1.5">
-          CampusGhosts <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 font-normal">v2.0</span>
+            <div class="flex items-center gap-3 font-mono text-[10px] text-zinc-400">
+              <span>Time: <strong id="diag-metric-time" class="text-zinc-200">-- ms</strong></span>
+              <span>Memory: <strong id="diag-metric-mem" class="text-zinc-200">-- KB</strong></span>
+              <span>ELO Delta: <strong id="diag-metric-delta" class="text-emerald-400">0</strong></span>
+            </div>
+          </div>
+
+          <p id="diag-socratic-hint" class="text-zinc-300 font-mono text-xs leading-relaxed">
+            Click "Start 1v1 Duel", write or load your implementation, and submit to receive dynamic compiler diagnostics and Socratic coaching.
+          </p>
+
+          <details id="diag-details-log" class="hidden mt-1.5 pt-1 border-t border-zinc-800/60">
+            <summary class="text-[9px] text-zinc-500 cursor-pointer font-mono hover:text-zinc-300 select-none">View Compiler & Diagnostic Output Log</summary>
+            <pre id="diag-log-output" class="text-[10px] text-zinc-400 font-mono bg-zinc-950 p-2 rounded mt-1 overflow-x-auto whitespace-pre-wrap max-h-24 custom-scroll"></pre>
+          </details>
+        </div>
+
+        <div class="text-[9px] text-zinc-500 font-mono pt-1 border-t border-zinc-800/60 flex items-center justify-between">
+          <span>Target Problem: <strong id="diag-problem-label" class="text-zinc-400">arr-bound (Bounds Verification)</strong></span>
+          <span>Zero Identity Leakage: Telemetry contains ZERO roll numbers</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ──────────────────────────────────────────────────────────────────── -->
+    <!-- RIGHT PANE: Faculty Telemetry, DB Audit & Placement Claim           -->
+    <!-- ──────────────────────────────────────────────────────────────────── -->
+    <section class="w-1/2 flex flex-col bg-[#09090B] overflow-hidden">
+      <!-- 3 Header Tabs -->
+      <div class="h-10 border-b border-zinc-800 bg-[#111113] px-3 flex items-center justify-between shrink-0">
+        <div class="flex items-center gap-4 h-full">
+          <button class="tab-btn active h-full px-2 font-mono text-xs font-semibold" data-tab="tab-heatmap">
+            1. k-Anonymous Telemetry
+          </button>
+          <button class="tab-btn h-full px-2 font-mono text-xs font-semibold" data-tab="tab-inspector">
+            2. DB Unlinkability Inspector
+          </button>
+          <button class="tab-btn h-full px-2 font-mono text-xs font-semibold" data-tab="tab-claim">
+            3. Placement Claim Verifier
+          </button>
+        </div>
+
+        <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded">
+          Privacy Invariant: k &ge; 5
         </span>
       </div>
 
-      <!-- Blind Commitment Input Form -->
-      <div class="flex items-center gap-2 flex-1 max-w-2xl">
-        <div class="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 flex-1">
-          <span class="text-zinc-500 font-mono text-[11px]">Roll:</span>
-          <input id="input-roll-no" type="text" value="2601010043" placeholder="2601010043" class="bg-transparent border-none outline-none font-mono text-xs w-28 text-zinc-200" />
-        </div>
+      <!-- Tab Content Area -->
+      <div class="flex-1 overflow-y-auto custom-scroll p-4">
 
-        <div class="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 flex-1">
-          <span class="text-zinc-500 font-mono text-[11px]">Salt:</span>
-          <input id="input-secret-salt" type="text" value="krmu2026_salt" placeholder="min 8 chars" class="bg-transparent border-none outline-none font-mono text-xs flex-1 text-zinc-200" />
-          <button id="btn-gen-salt" title="Generate Cryptographic Salt" class="text-[10px] font-mono text-zinc-400 hover:text-zinc-200 px-1 rounded hover:bg-zinc-800 cursor-pointer">
-            Random
-          </button>
-        </div>
-
-        <button id="btn-auth-commit" class="bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-semibold px-3 py-1.5 rounded transition-colors text-xs font-mono shrink-0 flex items-center gap-1 cursor-pointer">
-          <span>Enter as Ghost</span>
-        </button>
-      </div>
-
-      <!-- Live Status Pills -->
-      <div class="flex items-center gap-2 shrink-0 font-mono text-[11px]">
-        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800">
-          <span class="text-zinc-500">Ghost:</span>
-          <span id="pill-ghost-alias" class="text-emerald-400 font-semibold">Not Anchored</span>
-        </div>
-
-        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800">
-          <span class="text-zinc-500">ELO:</span>
-          <span id="pill-elo" class="text-zinc-200 font-bold">1200</span>
-        </div>
-
-        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800" title="Bot Detection Trust Score">
-          <span class="text-zinc-500">Trust:</span>
-          <span id="pill-trust" class="text-emerald-400 font-bold">100.0%</span>
-        </div>
-
-        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800">
-          <span class="text-zinc-500">Strikes:</span>
-          <span id="pill-strikes" class="text-amber-400 font-bold">0/3</span>
-          <button id="btn-reset-strikes" title="Reset strikes for live rehearsals" class="text-[9px] text-zinc-400 hover:text-zinc-200 ml-1 underline cursor-pointer">Reset</button>
-        </div>
-      </div>
-    </header>
-
-    <!-- MAIN SPLIT VIEW (50% Student Arena | 50% Faculty / Placement) -->
-    <main class="flex-1 flex overflow-hidden">
-      <!-- LEFT PANE: Student 1v1 Ghost Duel Arena -->
-      <section class="w-1/2 border-r border-zinc-800 flex flex-col bg-[#09090B] overflow-hidden">
-        <!-- Duel Control Bar -->
-        <div class="h-10 border-b border-zinc-800 bg-[#111113] px-3 flex items-center justify-between shrink-0 gap-2">
-          <div class="flex items-center gap-2">
-            <button id="btn-start-duel" class="bg-cyan-600 hover:bg-cyan-500 text-zinc-950 font-bold px-2.5 py-1 rounded text-[11px] font-mono transition-colors flex items-center gap-1 cursor-pointer">
-              <span id="btn-start-duel-label">Start 1v1 Duel</span>
-            </button>
-
-            <select id="select-language" class="bg-zinc-900 border border-zinc-800 text-zinc-300 rounded px-2 py-1 text-[11px] font-mono outline-none">
-              <option value="cpp">C++ (GCC 13)</option>
-              <option value="c">C (GCC 13)</option>
-              <option value="python">Python 3.12</option>
-              <option value="java">Java 21</option>
-              <option value="javascript">JavaScript (Node.js 20)</option>
-              <option value="typescript">TypeScript 5.3</option>
-              <option value="go">Go 1.22</option>
-              <option value="rust">Rust 1.76</option>
-            </select>
-          </div>
-
-          <!-- 3 Stage Demo Preset Buttons -->
-          <div class="flex items-center gap-1">
-            <button id="btn-preset-array" class="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-amber-400 px-2 py-1 rounded text-[10px] font-mono cursor-pointer" title="Off-by-one error (unmasks k=4 to 5)">
-              Load Buggy Array (k=4&rarr;5)
-            </button>
-            <button id="btn-preset-pointer" class="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-rose-400 px-2 py-1 rounded text-[10px] font-mono cursor-pointer" title="Uninitialized pointer dereference">
-              Load Null Pointer Bug
-            </button>
-            <button id="btn-preset-clean" class="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-emerald-400 px-2 py-1 rounded text-[10px] font-mono cursor-pointer" title="Optimal reference solution">
-              Load Clean Solution
-            </button>
-          </div>
-        </div>
-
-        <!-- Side-by-Side Dual Editors -->
-        <div class="flex-1 flex overflow-hidden border-b border-zinc-800">
-          <!-- Active Student Editor -->
-          <div class="w-1/2 flex flex-col border-r border-zinc-800 bg-[#0C0C0E] relative overflow-hidden">
-            <div class="h-6 bg-zinc-900/60 border-b border-zinc-800/80 px-2 flex items-center justify-between text-[10px] font-mono text-zinc-400">
-              <span>You (Active Student Workspace)</span>
-              <span class="text-emerald-500 flex items-center gap-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>Protected by AntiCheatGuard</span>
-              </span>
-            </div>
-            <!-- Anti-Cheat Instant Focus Lockout Overlay -->
-            <div id="split-lockout-overlay" class="hidden absolute inset-0 z-30 bg-rose-950/85 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center">
-              <div class="p-3 bg-zinc-950/90 border border-rose-600 rounded-lg text-rose-200 font-mono text-xs space-y-2 max-w-xs shadow-2xl">
-                <div class="flex items-center justify-center gap-1.5 font-bold text-rose-400 uppercase tracking-wide text-[11px]">
-                  <i data-lucide="shield-alert" class="w-4 h-4 text-rose-500 animate-bounce"></i>
-                  <span>Anti-Cheat Focus Lockout</span>
-                </div>
-                <p id="split-lockout-reason" class="text-[11px] text-zinc-300">Window focus lost / tab switch detected.</p>
-                <div class="text-[11px] bg-rose-900/40 border border-rose-800/60 rounded py-1.5 px-3 font-mono">
-                  Editor frozen. Resuming in <strong id="split-lockout-timer" class="text-rose-100 font-bold text-sm">4</strong>s...
-                </div>
-                <p class="text-[9px] text-zinc-500">Strike recorded. 3 strikes result in permanent duel disqualification &amp; -25 ELO.</p>
-              </div>
-            </div>
-            <textarea id="editor-student" spellcheck="false" autocomplete="off" autocapitalize="off" class="flex-1 w-full bg-transparent text-zinc-200 font-mono text-xs p-3 outline-none resize-none custom-scroll leading-relaxed" placeholder="// Enter your code solution here or click a demo preset..."></textarea>
-          </div>
-
-          <!-- Competitor Ghost Replay Pane -->
-          <div class="w-1/2 flex flex-col bg-[#0A0A0C]">
-            <div class="h-6 bg-zinc-900/60 border-b border-zinc-800/80 px-2 flex items-center justify-between text-[10px] font-mono text-zinc-400">
-              <span>Rival Ghost (Phantom_42 &bull; ELO 1240)</span>
-              <span id="replay-progress-label" class="text-cyan-400">0%</span>
-            </div>
-            <textarea id="editor-competitor" readonly class="flex-1 w-full bg-transparent text-emerald-400/90 font-mono text-xs p-3 outline-none resize-none custom-scroll leading-relaxed select-none cursor-default" placeholder="// Competitor live stream will appear here when duel begins..."></textarea>
-          </div>
-        </div>
-
-        <!-- Action Bar & Live Anti-Cheat Toast Banner -->
-        <div class="h-10 border-b border-zinc-800 bg-[#111113] px-3 flex items-center justify-between shrink-0">
-          <button id="btn-submit-code" class="bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold px-4 py-1 rounded text-xs font-mono transition-colors cursor-pointer">
-            Submit Code
-          </button>
-
-          <div id="toast-anti-cheat" class="font-mono text-[10px] text-zinc-400 flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
-            <span id="toast-anti-cheat-text">Anti-Cheat Active &bull; Paste blocked: 0 &bull; Tab strikes: 0/3</span>
-          </div>
-        </div>
-
-        <!-- Socratic AI Coach Diagnostic Card -->
-        <div class="h-36 bg-[#111113] p-3 overflow-y-auto custom-scroll flex flex-col justify-between shrink-0">
-          <div>
-            <div class="flex items-center justify-between mb-1.5">
-              <div class="flex items-center gap-2">
-                <span class="font-mono text-[11px] font-bold text-zinc-300">AI Socratic Diagnostic</span>
-                <span id="diag-badge-tag" class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-zinc-800 text-zinc-400">IDLE</span>
-                <span id="diag-badge-source" class="text-[9px] font-mono text-zinc-500">source: standby</span>
-              </div>
-
-              <div class="flex items-center gap-3 font-mono text-[10px] text-zinc-400">
-                <span>Time: <strong id="diag-metric-time" class="text-zinc-200">-- ms</strong></span>
-                <span>Memory: <strong id="diag-metric-mem" class="text-zinc-200">-- KB</strong></span>
-                <span>ELO Delta: <strong id="diag-metric-delta" class="text-emerald-400">0</strong></span>
-              </div>
+        <!-- ────────────────────────────────────────────────────────────────── -->
+        <!-- TAB 1: k-Anonymous Failure Heatmap                                 -->
+        <!-- ────────────────────────────────────────────────────────────────── -->
+        <div id="tab-heatmap" class="space-y-4">
+          <!-- Control Bar for Heatmap -->
+          <div class="flex items-center justify-between bg-[#111113] p-2.5 rounded border border-zinc-800 gap-2 flex-wrap">
+            <div class="flex items-center gap-2">
+              <span class="font-mono text-xs text-zinc-400">View:</span>
+              <button id="btn-toggle-telemetry-mode" class="bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold px-2.5 py-1 rounded text-xs font-mono transition-colors">
+                Safe View (k &ge; 5 Masked)
+              </button>
+              <span id="telemetry-mode-desc" class="text-[10px] font-mono text-zinc-500">Clusters &lt; 5 ghosts are mathematically masked</span>
             </div>
 
-            <p id="diag-socratic-hint" class="text-zinc-300 font-mono text-xs leading-relaxed">
-              Click &quot;Start 1v1 Duel&quot;, load a demo snippet or write a patch, then submit to receive real-time Socratic feedback.
-            </p>
-          </div>
+            <div class="flex items-center gap-2">
+              <!-- Concept Selector for Remedial Plan -->
+              <select id="select-remedial-concept" class="bg-zinc-900 border border-zinc-800 text-zinc-300 rounded px-2 py-1 text-xs font-mono outline-none">
+                <option value="ARRAY_OUT_OF_BOUNDS">ARRAY_OUT_OF_BOUNDS</option>
+                <option value="POINTER_DEREF_NULL">POINTER_DEREF_NULL</option>
+                <option value="LOOP_INFINITE_BOUND">LOOP_INFINITE_BOUND</option>
+                <option value="RECURSION_NO_BASE">RECURSION_NO_BASE</option>
+                <option value="LOGIC_INCORRECT">LOGIC_INCORRECT</option>
+                <option value="SYNTAX_ERROR">SYNTAX_ERROR</option>
+              </select>
 
-          <div class="text-[9px] text-zinc-500 font-mono pt-1 border-t border-zinc-800/60 flex items-center justify-between">
-            <span>Target Problem: <strong id="diag-problem-label" class="text-zinc-400">arr-bound (Bounds Verification)</strong></span>
-            <span>Zero Identity Leakage: Telemetry contains ZERO roll numbers</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- RIGHT PANE: Faculty Telemetry, DB Audit & Placement Claim -->
-      <section class="w-1/2 flex flex-col bg-[#09090B] overflow-hidden">
-        <!-- 3 Header Tabs -->
-        <div class="h-10 border-b border-zinc-800 bg-[#111113] px-3 flex items-center justify-between shrink-0">
-          <div class="flex items-center gap-4 h-full">
-            <button class="tab-btn active h-full px-2 font-mono text-xs font-semibold cursor-pointer" data-tab="tab-heatmap">
-              1. k-Anonymous Telemetry
-            </button>
-            <button class="tab-btn h-full px-2 font-mono text-xs font-semibold cursor-pointer" data-tab="tab-inspector">
-              2. DB Unlinkability Inspector
-            </button>
-            <button class="tab-btn h-full px-2 font-mono text-xs font-semibold cursor-pointer" data-tab="tab-claim">
-              3. Placement Claim Verifier
-            </button>
-          </div>
-
-          <span class="text-[10px] font-mono text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded">
-            Privacy Invariant: k &ge; 5
-          </span>
-        </div>
-
-        <!-- Tab Content Area -->
-        <div class="flex-1 overflow-y-auto custom-scroll p-4">
-          <!-- TAB 1: Heatmap -->
-          <div id="tab-heatmap" class="space-y-4">
-            <div class="flex items-center justify-between bg-[#111113] p-2.5 rounded border border-zinc-800">
-              <div class="flex items-center gap-2">
-                <span class="font-mono text-xs text-zinc-400">Telemetry View:</span>
-                <button id="btn-toggle-telemetry-mode" class="bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold px-2.5 py-1 rounded text-xs font-mono transition-colors cursor-pointer">
-                  Safe View (k &ge; 5 Masked)
-                </button>
-                <span id="telemetry-mode-desc" class="text-[10px] font-mono text-zinc-500">Clusters &lt; 5 ghosts are mathematically masked</span>
-              </div>
-
-              <div class="flex items-center gap-2">
-                <button id="btn-remedial-plan" class="bg-amber-600 hover:bg-amber-500 text-zinc-950 font-bold px-2.5 py-1 rounded text-xs font-mono transition-colors cursor-pointer">
-                  1-Click Remedial Lecture Plan
-                </button>
-                <button id="btn-refresh-heatmap" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-2 py-1 rounded text-xs font-mono cursor-pointer">
-                  Refresh
-                </button>
-              </div>
+              <button id="btn-remedial-plan" class="bg-amber-600 hover:bg-amber-500 text-zinc-950 font-bold px-2.5 py-1 rounded text-xs font-mono transition-colors">
+                Generate Remedial Plan
+              </button>
+              <button id="btn-refresh-heatmap" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-2 py-1 rounded text-xs font-mono">
+                Refresh
+              </button>
             </div>
+          </div>
 
-            <div class="bg-[#111113] p-3 rounded border border-zinc-800 h-64">
-              <canvas id="canvas-heatmap"></canvas>
-            </div>
+          <!-- Chart.js Canvas Container -->
+          <div class="bg-[#111113] p-3 rounded border border-zinc-800 h-64">
+            <canvas id="canvas-heatmap"></canvas>
+          </div>
 
-            <div id="card-remedial" class="hidden bg-[#111113] p-3.5 rounded border border-amber-800/60 space-y-3">
-              <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
-                <div>
-                  <h3 id="remedial-title" class="font-bold text-amber-400 text-xs">Automated Remedial Lecture Plan</h3>
-                  <p class="text-[10px] text-zinc-400 font-mono">Generated from aggregated anonymized telemetry failure clusters</p>
-                </div>
-                <button id="btn-close-remedial" class="text-zinc-500 hover:text-zinc-300 font-mono text-xs cursor-pointer">[Dismiss]</button>
-              </div>
-
+          <!-- Remedial Presentation Card (Dynamic) -->
+          <div id="card-remedial" class="hidden bg-[#111113] p-3.5 rounded border border-amber-800/60 space-y-3">
+            <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
               <div>
-                <span class="text-[10px] font-mono text-zinc-400 font-semibold mb-1 block">5-Slide Concept Presentation:</span>
-                <div id="remedial-slides-grid" class="grid grid-cols-5 gap-2"></div>
+                <h3 id="remedial-title" class="font-bold text-amber-400 text-xs">Automated Remedial Lecture Plan</h3>
+                <p class="text-[10px] text-zinc-400 font-mono">Generated dynamically from anonymized telemetry failure clusters</p>
               </div>
+              <button id="btn-close-remedial" class="text-zinc-500 hover:text-zinc-300 font-mono text-xs">[Dismiss]</button>
+            </div>
 
-              <div>
-                <span class="text-[10px] font-mono text-zinc-400 font-semibold mb-1 block">3 High-Signal Viva Examination Questions:</span>
-                <div id="remedial-viva-list" class="space-y-1.5"></div>
-              </div>
+            <!-- 5 Slide Outline Grid -->
+            <div>
+              <span class="text-[10px] font-mono text-zinc-400 font-semibold mb-1 block">5-Slide Concept Presentation:</span>
+              <div id="remedial-slides-grid" class="grid grid-cols-5 gap-2"></div>
+            </div>
+
+            <!-- 3 Viva Questions -->
+            <div>
+              <span class="text-[10px] font-mono text-zinc-400 font-semibold mb-1 block">3 High-Signal Viva Examination Questions:</span>
+              <div id="remedial-viva-list" class="space-y-1.5"></div>
             </div>
           </div>
+        </div>
 
-          <!-- TAB 2: DB Inspector -->
-          <div id="tab-inspector" class="hidden space-y-4">
-            <div class="p-3 rounded bg-emerald-950/20 border border-emerald-800/40 text-emerald-400 font-mono text-xs flex items-center justify-between">
-              <span>&check; Cryptographic Privacy Invariant: 0 Foreign Keys connecting institutional identities to pseudonyms.</span>
-              <span class="text-[10px] bg-emerald-900/60 px-2 py-0.5 rounded">Unlinkability Guaranteed</span>
-            </div>
+        <!-- ────────────────────────────────────────────────────────────────── -->
+        <!-- TAB 2: DB Unlinkability Inspector                                  -->
+        <!-- ────────────────────────────────────────────────────────────────── -->
+        <div id="tab-inspector" class="hidden space-y-4">
+          <div class="p-3 rounded bg-emerald-950/20 border border-emerald-800/40 text-emerald-400 font-mono text-xs flex items-center justify-between">
+            <span>MATHEMATICAL GUARANTEE: ZERO Foreign Keys linking verified identity to activity</span>
+            <span id="badge-fk-status" class="text-[10px] bg-emerald-900/60 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800 font-semibold">PRAGMA foreign_key_list = [] (Verified)</span>
+          </div>
 
-            <div class="grid grid-cols-2 gap-4">
-              <div class="bg-[#111113] rounded border border-zinc-800 overflow-hidden">
-                <div class="bg-zinc-900 px-3 py-2 border-b border-zinc-800 font-mono text-xs font-bold text-zinc-300 flex items-center justify-between">
-                  <span>1. verified_students</span>
-                  <span class="text-[10px] text-zinc-500 font-normal">Institutional Roll Numbers</span>
-                </div>
+          <div class="grid grid-cols-2 gap-4">
+            <!-- Table 1: verified_students -->
+            <div class="bg-[#111113] rounded border border-zinc-800 overflow-hidden">
+              <div class="bg-zinc-900 px-3 py-2 border-b border-zinc-800 font-mono text-xs font-bold text-zinc-300 flex items-center justify-between">
+                <span>1. verified_students</span>
+                <span class="text-[10px] text-zinc-500 font-normal">Identities Only</span>
+              </div>
+              <div class="overflow-x-auto">
                 <table class="w-full text-left font-mono text-[11px]">
                   <thead class="bg-zinc-950 text-zinc-500 border-b border-zinc-800">
                     <tr><th class="p-2">roll_no</th><th class="p-2">verified_at</th></tr>
                   </thead>
                   <tbody id="tbody-verified-students" class="divide-y divide-zinc-800 text-zinc-300">
-                    <tr><td colspan="2" class="p-3 text-center text-zinc-500">Loading...</td></tr>
+                    <tr><td colspan="2" class="p-3 text-center text-zinc-500">Loading DB records...</td></tr>
                   </tbody>
                 </table>
               </div>
+            </div>
 
-              <div class="bg-[#111113] rounded border border-zinc-800 overflow-hidden">
-                <div class="bg-zinc-900 px-3 py-2 border-b border-zinc-800 font-mono text-xs font-bold text-zinc-300 flex items-center justify-between">
-                  <span>2. ghost_profiles</span>
-                  <span class="text-[10px] text-zinc-500 font-normal">Pseudonymous Only</span>
-                </div>
+            <!-- Table 2: ghost_profiles -->
+            <div class="bg-[#111113] rounded border border-zinc-800 overflow-hidden">
+              <div class="bg-zinc-900 px-3 py-2 border-b border-zinc-800 font-mono text-xs font-bold text-zinc-300 flex items-center justify-between">
+                <span>2. ghost_profiles</span>
+                <span class="text-[10px] text-zinc-500 font-normal">Pseudonymous Only</span>
+              </div>
+              <div class="overflow-x-auto">
                 <table class="w-full text-left font-mono text-[11px]">
                   <thead class="bg-zinc-950 text-zinc-500 border-b border-zinc-800">
                     <tr><th class="p-2">commitment_hash</th><th class="p-2">alias</th><th class="p-2">elo</th></tr>
                   </thead>
                   <tbody id="tbody-ghost-profiles" class="divide-y divide-zinc-800 text-zinc-300">
-                    <tr><td colspan="3" class="p-3 text-center text-zinc-500">Loading...</td></tr>
+                    <tr><td colspan="3" class="p-3 text-center text-zinc-500">Loading DB records...</td></tr>
                   </tbody>
                 </table>
               </div>
             </div>
-            <div class="text-right">
-              <button id="btn-refresh-inspector" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-1 rounded text-xs font-mono cursor-pointer">
-                Refresh Schema Snapshot
-              </button>
+          </div>
+
+          <div class="text-right">
+            <button id="btn-refresh-inspector" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-3 py-1 rounded text-xs font-mono">
+              Refresh Schema Snapshot
+            </button>
+          </div>
+        </div>
+
+        <!-- ────────────────────────────────────────────────────────────────── -->
+        <!-- TAB 3: Placement Claim Verifier & Leaderboard                      -->
+        <!-- ────────────────────────────────────────────────────────────────── -->
+        <div id="tab-claim" class="hidden space-y-4">
+          <!-- Verification Form Card -->
+          <div class="bg-[#111113] p-4 rounded border border-zinc-800 space-y-3">
+            <h3 class="font-bold text-zinc-100 text-xs font-mono flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              Zero-Knowledge Placement Credential Audit
+            </h3>
+            <p class="text-[11px] text-zinc-400 leading-relaxed font-mono">
+              Recruiters verify that an applicant owns a verified Top-Rank Ghost Alias without exposing the student's personal identity to cohort competitors.
+            </p>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[10px] font-mono text-zinc-500 mb-1">Student Roll Number:</label>
+                <input id="claim-roll-no" type="text" placeholder="Roll Number (e.g. 2601010043)" class="w-full bg-zinc-950 border border-zinc-800 rounded px-2.5 py-1.5 font-mono text-xs text-zinc-200 outline-none" />
+              </div>
+              <div>
+                <label class="block text-[10px] font-mono text-zinc-500 mb-1">Private Secret Salt:</label>
+                <input id="claim-secret-salt" type="text" placeholder="Private secret salt" class="w-full bg-zinc-950 border border-zinc-800 rounded px-2.5 py-1.5 font-mono text-xs text-zinc-200 outline-none" />
+              </div>
+            </div>
+
+            <button id="btn-verify-claim" class="bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold px-4 py-1.5 rounded text-xs font-mono transition-colors">
+              Verify Placement Ownership
+            </button>
+
+            <!-- Verification Output Badge -->
+            <div id="claim-result-box" class="hidden p-3 rounded border font-mono text-xs space-y-2"></div>
+          </div>
+
+          <!-- Top-10 Leaderboard Table -->
+          <div class="bg-[#111113] rounded border border-zinc-800 overflow-hidden">
+            <div class="bg-zinc-900 px-3 py-2 border-b border-zinc-800 font-mono text-xs font-bold text-zinc-300 flex items-center justify-between">
+              <span>Top-10 Ghost Competitor Leaderboard</span>
+              <span class="text-[10px] text-zinc-500 font-normal">Ranked by ELO</span>
+            </div>
+            <table class="w-full text-left font-mono text-[11px]">
+              <thead class="bg-zinc-950 text-zinc-500 border-b border-zinc-800">
+                <tr><th class="p-2">Rank</th><th class="p-2">Ghost Alias</th><th class="p-2">ELO Rating</th><th class="p-2">Trust</th></tr>
+              </thead>
+              <tbody id="tbody-leaderboard" class="divide-y divide-zinc-800 text-zinc-300">
+                <tr><td colspan="4" class="p-3 text-center text-zinc-500">Loading Leaderboard...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- ──────────────────────────────────────────────────────────────────── -->
+  <!-- 1v1 DUEL OUTCOME RESOLUTION MODAL                                      -->
+  <!-- ──────────────────────────────────────────────────────────────────── -->
+  <div id="duel-outcome-modal" class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-[#111113] border border-zinc-700/80 rounded-lg max-w-lg w-full shadow-2xl overflow-hidden font-mono text-xs animate-in fade-in zoom-in-95 duration-150">
+      <!-- Modal Header Banner -->
+      <div id="duel-outcome-header" class="px-5 py-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-950">
+        <div class="flex items-center gap-2.5">
+          <span id="duel-outcome-icon" class="w-3 h-3 rounded-full bg-emerald-500"></span>
+          <span id="duel-outcome-title" class="text-sm font-bold tracking-wider text-emerald-400">DUEL CONCLUDED: VICTORY</span>
+        </div>
+        <span id="duel-outcome-badge" class="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-950 text-emerald-300 border border-emerald-800">
+          +24 ELO
+        </span>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-5 space-y-4 text-zinc-300">
+        <!-- Status summary message -->
+        <p id="duel-outcome-message" class="text-zinc-200 leading-relaxed text-[11px] bg-zinc-900/60 p-2.5 rounded border border-zinc-800/80">
+          Speed & Invariant Victory: You solved the challenge before the rival ghost finished!
+        </p>
+
+        <!-- Head-to-Head Comparison Grid -->
+        <div class="grid grid-cols-2 gap-3">
+          <!-- Student Side -->
+          <div class="bg-zinc-900/80 border border-zinc-800 p-3 rounded">
+            <div class="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Your Ghost (Player)</div>
+            <div id="outcome-student-alias" class="font-bold text-zinc-200 text-sm">Cipher_01</div>
+            <div class="mt-2 space-y-1 text-[11px] text-zinc-400">
+              <div class="flex justify-between">
+                <span>Rating:</span>
+                <span id="outcome-student-elo" class="font-bold text-zinc-200">1200</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Solve Time:</span>
+                <span id="outcome-student-time" class="text-cyan-400">42.1s</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Verdict:</span>
+                <span id="outcome-student-verdict" class="text-emerald-400 font-bold">OPTIMAL</span>
+              </div>
             </div>
           </div>
 
-          <!-- TAB 3: Placement Claim -->
-          <div id="tab-split-claim" class="hidden space-y-4">
-            <div class="bg-[#111113] p-4 rounded border border-zinc-800 space-y-3">
-              <h3 class="font-bold text-zinc-100 text-xs font-mono flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                Zero-Knowledge Placement Credential Audit
-              </h3>
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-[10px] font-mono text-zinc-500 mb-1">Student Roll Number:</label>
-                  <input id="claim-roll-no" type="text" value="2601010043" class="w-full bg-zinc-950 border border-zinc-800 rounded px-2.5 py-1.5 font-mono text-xs text-zinc-200 outline-none" />
-                </div>
-                <div>
-                  <label class="block text-[10px] font-mono text-zinc-500 mb-1">Private Secret Salt:</label>
-                  <input id="claim-secret-salt" type="text" value="krmu2026_salt" class="w-full bg-zinc-950 border border-zinc-800 rounded px-2.5 py-1.5 font-mono text-xs text-zinc-200 outline-none" />
-                </div>
+          <!-- Rival Side -->
+          <div class="bg-zinc-900/80 border border-zinc-800 p-3 rounded">
+            <div class="text-[10px] uppercase tracking-wider text-zinc-500 mb-1">Matched Rival</div>
+            <div id="outcome-rival-alias" class="font-bold text-zinc-200 text-sm">Cipher_14</div>
+            <div class="mt-2 space-y-1 text-[11px] text-zinc-400">
+              <div class="flex justify-between">
+                <span>Rating:</span>
+                <span id="outcome-rival-elo" class="font-bold text-zinc-200">1225</span>
               </div>
-              <button id="btn-verify-claim" class="bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold px-4 py-1.5 rounded text-xs font-mono transition-colors cursor-pointer">
-                Verify Placement Ownership
-              </button>
-              <div id="claim-result-box" class="hidden p-3 rounded border font-mono text-xs space-y-2"></div>
-            </div>
-
-            <div class="bg-[#111113] rounded border border-zinc-800 overflow-hidden">
-              <div class="bg-zinc-900 px-3 py-2 border-b border-zinc-800 font-mono text-xs font-bold text-zinc-300 flex items-center justify-between">
-                <span>Top-10 Ghost Competitor Leaderboard</span>
-                <span class="text-[10px] text-zinc-500 font-normal">Ranked by ELO</span>
+              <div class="flex justify-between">
+                <span>Finish Status:</span>
+                <span id="outcome-rival-status" class="text-zinc-300">Writing (68%)</span>
               </div>
-              <table class="w-full text-left font-mono text-[11px]">
-                <thead class="bg-zinc-950 text-zinc-500 border-b border-zinc-800">
-                  <tr><th class="p-2">Rank</th><th class="p-2">Ghost Alias</th><th class="p-2">ELO Rating</th><th class="p-2">Trust</th></tr>
-                </thead>
-                <tbody id="tbody-split-leaderboard" class="divide-y divide-zinc-800 text-zinc-300">
-                  <tr><td colspan="4" class="p-3 text-center text-zinc-500">Loading...</td></tr>
-                </tbody>
-              </table>
+              <div class="flex justify-between">
+                <span>Handicap:</span>
+                <span id="outcome-rival-handicap" class="text-zinc-400">85s target</span>
+              </div>
             </div>
           </div>
         </div>
-      </section>
-    </main>
+
+        <!-- Rating Delta Bar -->
+        <div class="bg-zinc-950 p-2.5 rounded border border-zinc-800 flex items-center justify-between text-[11px]">
+          <span class="text-zinc-400">Institutional ELO Adjustment:</span>
+          <span id="outcome-elo-calc" class="font-bold text-emerald-400">+24 ELO (1200 → 1224)</span>
+        </div>
+
+        <!-- Socratic Coaching Hint -->
+        <div class="text-[10px] text-zinc-400 italic">
+          <span class="text-zinc-300 not-italic font-semibold">Coach Invariant: </span>
+          <span id="outcome-socratic-note">All test assertions passed with zero boundary infractions.</span>
+        </div>
+      </div>
+
+      <!-- Modal Footer Controls -->
+      <div class="px-5 py-3 border-t border-zinc-800 bg-zinc-950 flex items-center justify-end gap-2">
+        <button id="btn-outcome-review" class="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-700 px-3 py-1.5 rounded text-[11px] transition-colors">
+          View Trace Log
+        </button>
+        <button id="btn-outcome-next" class="bg-cyan-600 hover:bg-cyan-500 text-zinc-950 font-bold px-4 py-1.5 rounded text-[11px] transition-colors">
+          Next 1v1 Duel
+        </button>
+      </div>
+    </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════════════
-       TOAST CONTAINER
-       ═══════════════════════════════════════════════════════════════ -->
-  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2"></div>
-
-  <!-- Application Logic -->
-  <script type="module" src="guard.js"></script>
-  <script src="app.js"></script>
-  <script type="module" src="split_duel.js"></script>
+  <!-- ES Module Application Entrypoint -->
+  <script type="module" src="/static/app.js"></script>
 </body>
 </html>
