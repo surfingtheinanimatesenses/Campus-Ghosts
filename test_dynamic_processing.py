@@ -245,3 +245,78 @@ def sum_array_elements(arr: list[int]) -> int:
     assert res["new_elo"] < 1200
 
 
+def test_faculty_auth_valid_and_invalid(client):
+    """Verify faculty portal authentication validates department key cleanly."""
+    ok_resp = client.post("/api/faculty/auth", json={
+        "email": "prof.sharma@krmangalam.edu.in",
+        "access_key": "KRMU-FAC-2026",
+        "cohort": "CSE-1C",
+    })
+    assert ok_resp.status_code == 200
+    data = ok_resp.json()
+    assert data["authenticated"] is True
+    assert data["cohort"] == "CSE-1C"
+
+    bad_resp = client.post("/api/faculty/auth", json={
+        "email": "prof.sharma@krmangalam.edu.in",
+        "access_key": "WRONG-KEY",
+        "cohort": "CSE-1C",
+    })
+    assert bad_resp.status_code == 401
+
+
+def test_arena_servers_and_custom_room_creation(client):
+    """Verify live arena server browser returns nodes, open rooms, and supports hosting new rooms."""
+    srv_resp = client.get("/api/arena/servers")
+    assert srv_resp.status_code == 200
+    srv_data = srv_resp.json()
+    assert "servers" in srv_data
+    assert len(srv_data["servers"]) == 3
+
+    first_server = srv_data["servers"][0]
+    assert first_server["server_id"] == "IN-KRMU-01"
+    assert len(first_server["rooms"]) >= 1
+
+    # Host custom room
+    room_resp = client.post("/api/arena/rooms", json={
+        "server_id": "IN-BLR-02",
+        "problem_id": "ptr-swap",
+        "language": "python",
+        "mode": "blitz",
+        "host_alias": "Cipher_Host99",
+        "host_elo": 1310,
+    })
+    assert room_resp.status_code == 200
+    created = room_resp.json()
+    assert created["created"] is True
+    assert created["room"]["server_id"] == "IN-BLR-02"
+    assert created["room"]["duration_sec"] == 90
+
+    # Verify custom room appears on IN-BLR-02
+    after_resp = client.get("/api/arena/servers").json()
+    blr = next(s for s in after_resp["servers"] if s["server_id"] == "IN-BLR-02")
+    assert any(r["host_alias"] == "Cipher_Host99" for r in blr["rooms"])
+
+
+def test_distinct_portal_views_present_in_html(client):
+    """Verify Student, Faculty, and Arena portals + Arena lobby/match views are distinctly rendered."""
+    html = client.get("/").text
+    for marker in (
+        "view-portal-gate",
+        "portal-student",
+        "student-page-overview",
+        "student-page-practice",
+        "student-page-credentials",
+        "student-page-leaderboard",
+        "portal-faculty",
+        "faculty-page-telemetry",
+        "faculty-page-remedial",
+        "faculty-page-audit",
+        "portal-arena",
+        "arena-page-lobby",
+        "arena-page-match",
+    ):
+        assert marker in html, f"Missing distinct portal view marker: {marker}"
+
+
+

@@ -84,6 +84,26 @@ class MatchmakeRequest(BaseModel):
     commitment_hash: str
     problem_id: Optional[str] = "arr-bound"
     language: Optional[str] = "cpp"
+    server_id: Optional[str] = "IN-KRMU-01"
+    mode: Optional[str] = "ranked"
+    round_duration_sec: Optional[int] = None
+    target_rival_hash: Optional[str] = None
+
+
+class FacultyAuthRequest(BaseModel):
+    email: str = Field(..., description="Faculty institutional email")
+    access_key: str = Field(..., description="Department faculty access key")
+    cohort: Optional[str] = "CSE-1C"
+
+
+class ArenaRoomCreateRequest(BaseModel):
+    server_id: str = "IN-KRMU-01"
+    problem_id: str = "arr-bound"
+    language: str = "cpp"
+    mode: str = "ranked"
+    commitment_hash: Optional[str] = None
+    host_alias: Optional[str] = "Cipher_Host"
+    host_elo: Optional[int] = 1200
 
 
 class PenaltyRequest(BaseModel):
@@ -233,23 +253,36 @@ def duel_matchmake(payload: MatchmakeRequest) -> Dict[str, Any]:
 
         student_elo = student["elo_rating"]
 
-        # Find closest 5 peer ghosts excluding the student
-        cursor.execute(
-            """
-            SELECT commitment_hash, alias, elo_rating, human_trust_score
-            FROM ghost_profiles
-            WHERE commitment_hash != ?
-            ORDER BY ABS(elo_rating - ?) ASC
-            LIMIT 5;
-            """,
-            (clean_hash, student_elo),
-        )
-        peers = cursor.fetchall()
-        if not peers:
-            rival = {"alias": "Cipher_01", "elo_rating": 1200, "commitment_hash": "ghost_default"}
-        else:
-            import random
-            rival = random.choice(peers)
+        # Find target rival if joining a specific room, else closest peers by ELO
+        rival = None
+        if payload.target_rival_hash:
+            cursor.execute(
+                """
+                SELECT commitment_hash, alias, elo_rating, human_trust_score
+                FROM ghost_profiles
+                WHERE commitment_hash = ?;
+                """,
+                (payload.target_rival_hash.strip(),),
+            )
+            rival = cursor.fetchone()
+
+        if not rival:
+            cursor.execute(
+                """
+                SELECT commitment_hash, alias, elo_rating, human_trust_score
+                FROM ghost_profiles
+                WHERE commitment_hash != ?
+                ORDER BY ABS(elo_rating - ?) ASC
+                LIMIT 5;
+                """,
+                (clean_hash, student_elo),
+            )
+            peers = cursor.fetchall()
+            if not peers:
+                rival = {"alias": "Cipher_01", "elo_rating": 1200, "commitment_hash": "ghost_default"}
+            else:
+                import random
+                rival = random.choice(peers)
 
         prob_id = payload.problem_id or "arr-bound"
         problem = PROBLEMS_CATALOG.get(prob_id, {
@@ -259,9 +292,13 @@ def duel_matchmake(payload: MatchmakeRequest) -> Dict[str, Any]:
         })
 
         rival_elo = rival["elo_rating"]
-        base_time = 90
+        mode = (payload.mode or "ranked").lower().strip()
+        default_dur = 90 if mode == "blitz" else 180
+        round_dur = payload.round_duration_sec if payload.round_duration_sec else default_dur
+
+        base_time = 55 if mode == "blitz" else 90
         elo_diff = rival_elo - 1200
-        target_time_sec = max(35, min(160, base_time - int(elo_diff * 0.25)))
+        target_time_sec = max(30, min(round_dur - 15, base_time - int(elo_diff * 0.25)))
         cps = max(16, min(36, 22 + int(elo_diff * 0.05)))
 
         import uuid
@@ -269,7 +306,9 @@ def duel_matchmake(payload: MatchmakeRequest) -> Dict[str, Any]:
 
         return {
             "match_id": match_id,
-            "round_duration_sec": 180,
+            "server_id": payload.server_id or "IN-KRMU-01",
+            "mode": mode,
+            "round_duration_sec": round_dur,
             "student": {
                 "alias": student["alias"],
                 "elo": student["elo_rating"],
@@ -446,6 +485,161 @@ def faculty_telemetry(mode: str = Query("safe", pattern="^(safe|raw)$")) -> Dict
         "mode": mode,
         "clusters": clusters,
     }
+
+
+# ---------------------------------------------------------------------------
+# Faculty Auth & Live Arena Server Browser Endpoints
+# ---------------------------------------------------------------------------
+_ARENA_SERVER_DEFS = [
+    {
+        "server_id": "IN-KRMU-01",
+        "name": "Campus Core Lab Node",
+        "region": "Gurugram / KRMU LAN",
+        "ping_ms": 11,
+        "capacity": 64,
+        "ruleset": "Strict Proctored (3-Strike)",
+        "mode": "ranked",
+        "status": "ONLINE",
+    },
+    {
+        "server_id": "IN-BLR-02",
+        "name": "India South Speed Blitz",
+        "region": "Bengaluru Cloud Edge",
+        "ping_ms": 28,
+        "capacity": 128,
+        "ruleset": "Speed Blitz (90s Clock)",
+        "mode": "blitz",
+        "status": "ONLINE",
+    },
+    {
+        "server_id": "AS-SGP-01",
+        "name": "APAC Open Practice Node",
+        "region": "Singapore Multi-Monitor",
+        "ping_ms": 54,
+        "capacity": 256,
+        "ruleset": "Relaxed / Sandbox Practice",
+        "mode": "practice",
+        "status": "ONLINE",
+    },
+]
+
+_CUSTOM_ARENA_ROOMS: List[Dict[str, Any]] = []
+
+
+@app.post("/api/faculty/auth", status_code=status.HTTP_200_OK)
+def faculty_auth(payload: FacultyAuthRequest) -> Dict[str, Any]:
+    """Authenticate faculty access to the telemetry & remedial console."""
+    email = payload.email.strip()
+    key = payload.access_key.strip()
+    expected_key = os.getenv("KRMU_FACULTY_KEY", "KRMU-FAC-2026")
+
+    if not email or "@" not in email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Valid institutional faculty email is required.",
+        )
+    if key != expected_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid department access key.",
+        )
+
+    local_part = email.split("@")[0].replace(".", " ").title()
+    return {
+        "authenticated": True,
+        "faculty_name": f"Prof. {local_part}" if not local_part.startswith("Prof") else local_part,
+        "email": email,
+        "cohort": payload.cohort or "CSE-1C",
+        "department": "Dept. of Computer Science & Engineering",
+    }
+
+
+@app.get("/api/arena/servers", status_code=status.HTTP_200_OK)
+def list_arena_servers() -> Dict[str, Any]:
+    """
+    Return live regional/institutional arena servers and active challenge rooms
+    populated from real ghost profiles in SQLite plus custom lobby rooms.
+    """
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT commitment_hash, alias, elo_rating, human_trust_score
+            FROM ghost_profiles
+            ORDER BY elo_rating DESC, alias ASC
+            LIMIT 12;
+            """
+        )
+        ghosts = [dict(r) for r in cursor.fetchall()]
+    finally:
+        conn.close()
+
+    problem_keys = list(PROBLEMS_CATALOG.keys()) or ["arr-bound"]
+    servers_out: List[Dict[str, Any]] = []
+
+    for s_idx, srv in enumerate(_ARENA_SERVER_DEFS):
+        srv_id = srv["server_id"]
+        # Distribute real DB ghosts across servers into waiting rooms
+        srv_rooms: List[Dict[str, Any]] = [
+            r for r in _CUSTOM_ARENA_ROOMS if r["server_id"] == srv_id
+        ]
+        slice_ghosts = ghosts[s_idx * 3 : (s_idx + 1) * 3]
+        for g_idx, g in enumerate(slice_ghosts):
+            pid = problem_keys[(s_idx + g_idx) % len(problem_keys)]
+            prob = PROBLEMS_CATALOG.get(pid, {})
+            lang = "cpp" if (s_idx + g_idx) % 2 == 0 else "python"
+            dur = 90 if srv["mode"] == "blitz" else 180
+            srv_rooms.append({
+                "room_id": f"rm_{srv_id.lower()}_{g['alias'].lower()}",
+                "server_id": srv_id,
+                "host_alias": g["alias"],
+                "host_elo": g["elo_rating"],
+                "host_hash": g["commitment_hash"],
+                "problem_id": pid,
+                "problem_title": prob.get("title", pid),
+                "language": lang,
+                "mode": srv["mode"],
+                "duration_sec": dur,
+                "status": "Waiting for Challenger",
+                "is_custom": False,
+            })
+
+        servers_out.append({
+            **srv,
+            "active_players": 6 + len(srv_rooms) * 2 + (s_idx * 3),
+            "open_rooms": len(srv_rooms),
+            "rooms": srv_rooms,
+        })
+
+    return {"servers": servers_out}
+
+
+@app.post("/api/arena/rooms", status_code=status.HTTP_200_OK)
+def create_arena_room(payload: ArenaRoomCreateRequest) -> Dict[str, Any]:
+    """Create a live challenge room on a target arena server."""
+    import uuid
+    prob = PROBLEMS_CATALOG.get(payload.problem_id, {})
+    dur = 90 if payload.mode == "blitz" else 180
+    room = {
+        "room_id": f"rm_custom_{uuid.uuid4().hex[:6]}",
+        "server_id": payload.server_id,
+        "host_alias": payload.host_alias or "Cipher_Host",
+        "host_elo": payload.host_elo or 1200,
+        "host_hash": payload.commitment_hash or "",
+        "problem_id": payload.problem_id,
+        "problem_title": prob.get("title", payload.problem_id),
+        "language": payload.language,
+        "mode": payload.mode,
+        "duration_sec": dur,
+        "status": "Open Challenge",
+        "is_custom": True,
+    }
+    _CUSTOM_ARENA_ROOMS.insert(0, room)
+    # Cap custom room history at 20 entries
+    if len(_CUSTOM_ARENA_ROOMS) > 20:
+        _CUSTOM_ARENA_ROOMS.pop()
+    return {"created": True, "room": room}
 
 
 @app.post("/api/faculty/remedial", status_code=status.HTTP_200_OK)
