@@ -608,3 +608,7 @@ def serve_index() -> FileResponse:
     if os.path.exists(index_path):
         return FileResponse(index_path)
     raise HTTPException(status_code=404, detail="Index HTML not found.")
+
+
+# Export handler for Vercel serverless runtime
+handler = app

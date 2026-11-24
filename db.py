@@ -15,21 +15,46 @@ import sqlite3
 from typing import Any, Dict, List, Optional
 
 # Default path points to campusghosts.db in the directory of this file
-DEFAULT_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "campusghosts.db")
+DEFAULT_LOCAL_DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "campusghosts.db")
+
+
+def is_serverless_env() -> bool:
+    """Detect if running in Vercel or AWS Lambda serverless read-only runtime."""
+    if os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME") or os.getenv("LAMBDA_TASK_ROOT"):
+        return True
+    try:
+        test_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".write_test")
+        with open(test_file, "w") as f:
+            f.write("ok")
+        os.remove(test_file)
+        return False
+    except (OSError, PermissionError):
+        return True
 
 
 def get_db_path(db_path: Optional[str] = None) -> str:
-    """Return configured database path or default."""
-    return db_path or os.getenv("CAMPUSGHOSTS_DB", DEFAULT_DB_PATH)
+    """Return configured database path or serverless /tmp fallback."""
+    if db_path:
+        return db_path
+    env_override = os.getenv("CAMPUSGHOSTS_DB")
+    if env_override:
+        return env_override
+    if is_serverless_env():
+        return "/tmp/campusghosts.db"
+    return DEFAULT_LOCAL_DB
 
 
 def get_connection(db_path: Optional[str] = None) -> sqlite3.Connection:
     """Create a SQLite connection configured with WAL journal mode and busy timeout."""
     target_path = get_db_path(db_path)
+    os.makedirs(os.path.dirname(os.path.abspath(target_path)), exist_ok=True)
     conn = sqlite3.connect(target_path, timeout=10.0)
     conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL;")
-    conn.execute("PRAGMA synchronous=NORMAL;")
+    try:
+        conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute("PRAGMA synchronous=NORMAL;")
+    except sqlite3.OperationalError:
+        conn.execute("PRAGMA journal_mode=MEMORY;")
     return conn
 
 
