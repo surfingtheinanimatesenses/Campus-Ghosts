@@ -663,6 +663,87 @@ int main() {{
         return None
 
 
+def _test_cpp_static_fallback(code: str, problem_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Fallback static semantic auditor for C++ code when g++ is not installed in runtime environment.
+    Verifies that required problem logic invariants are met and catches trivial or constant returns.
+    """
+    clean = code.strip()
+    if not clean:
+        return None
+
+    if problem_id == "arr-bound":
+        has_loop = bool(re.search(r"\b(?:for|while)\b", clean))
+        has_acc = bool(re.search(r"\+\=|\b(?:accumulate|sum)\b", clean))
+        returns_literal = bool(re.search(r"return\s+[\-0-9]+\s*;", clean))
+        if returns_literal and not has_loop:
+            return {
+                "passed": False,
+                "concept_tag": "LOGIC_INCORRECT",
+                "severity": "MEDIUM",
+                "socratic_hint": "Function returns a constant literal without iterating or accumulating array elements.",
+                "est_time_ms": 1,
+                "est_memory_kb": 1024,
+            }
+        if has_loop and not has_acc and not re.search(r"total\s*=\s*total\s*\+", clean):
+            return {
+                "passed": False,
+                "concept_tag": "LOGIC_INCORRECT",
+                "severity": "MEDIUM",
+                "socratic_hint": "Loop does not accumulate or sum the array elements.",
+                "est_time_ms": 1,
+                "est_memory_kb": 1024,
+            }
+    elif problem_id == "ptr-swap":
+        has_deref_assign = len(re.findall(r"\*\s*\w+\s*=", clean)) >= 2
+        if not has_deref_assign:
+            return {
+                "passed": False,
+                "concept_tag": "LOGIC_INCORRECT",
+                "severity": "MEDIUM",
+                "socratic_hint": "In-place pointer swap must assign both dereferenced pointers (*a and *b).",
+                "est_time_ms": 1,
+                "est_memory_kb": 1024,
+            }
+    elif problem_id == "loop-converge":
+        has_loop = bool(re.search(r"\b(?:while|for)\b", clean))
+        has_collatz_math = bool(re.search(r"/\s*2|3\s*\*\s*\w+\s*\+\s*1|%\s*2", clean))
+        if not has_loop or not has_collatz_math:
+            return {
+                "passed": False,
+                "concept_tag": "LOGIC_INCORRECT",
+                "severity": "MEDIUM",
+                "socratic_hint": "Collatz sequence requires a progression loop checking parity (% 2) and dividing / multiplying.",
+                "est_time_ms": 1,
+                "est_memory_kb": 1024,
+            }
+    elif problem_id == "rec-fact":
+        has_rec = bool(re.search(r"\bfactorial\s*\(", clean))
+        has_mult = bool(re.search(r"\*\s*factorial|\*\s*n|n\s*\*", clean))
+        if not has_rec or not has_mult:
+            return {
+                "passed": False,
+                "concept_tag": "LOGIC_INCORRECT",
+                "severity": "MEDIUM",
+                "socratic_hint": "Factorial logic must recursively multiply n by factorial(n - 1).",
+                "est_time_ms": 1,
+                "est_memory_kb": 1024,
+            }
+    elif problem_id == "str-palindrome":
+        has_check = bool(re.search(r"!=\s*s\[|==\s*s\[|s\[.*\]\s*==|s\[.*\]\s*!=", clean))
+        if not has_check:
+            return {
+                "passed": False,
+                "concept_tag": "LOGIC_INCORRECT",
+                "severity": "MEDIUM",
+                "socratic_hint": "Palindrome verification must compare symmetric index characters.",
+                "est_time_ms": 1,
+                "est_memory_kb": 1024,
+            }
+
+    return None
+
+
 # ---------------------------------------------------------------------------
 # Deterministic Offline Analyzer
 # ---------------------------------------------------------------------------
@@ -808,6 +889,10 @@ def offline_analyze_code(code: str, language: str = "cpp", problem_id: str = "")
             if cpp_res:
                 cpp_res["source"] = "offline_fallback"
                 return cpp_res
+            fallback_res = _test_cpp_static_fallback(c, problem_id)
+            if fallback_res:
+                fallback_res["source"] = "offline_fallback"
+                return fallback_res
 
     # Default passing optimal solution
     return {

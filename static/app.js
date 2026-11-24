@@ -294,6 +294,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   initGuardAndReplay();
   initTabs();
   initAuthCommit();
+  initPortalGate();
   initProblemSelector();
   initDuelControls();
   initPresets();
@@ -973,6 +974,13 @@ function initAuthCommit() {
         if (claimRoll) claimRoll.value = rollNo;
         if (claimSalt) claimSalt.value = salt;
 
+        // Update header role badge
+        const roleBadge = document.getElementById("header-role-badge");
+        if (roleBadge) {
+          roleBadge.textContent = `Student (${data.alias})`;
+          roleBadge.className = "px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800 shrink-0";
+        }
+
         showToast(`Zero-Knowledge Commitment Anchored: Alias ${data.alias} (ELO: ${data.elo_rating})`, "success");
       } catch (err) {
         showToast(`Commitment error: ${err.message}`, "error");
@@ -981,6 +989,213 @@ function initAuthCommit() {
         btnCommit.innerHTML = "<span>Enter as Ghost</span>";
       }
     });
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 3-Role Institutional Portal Gateway & Navigation
+// ---------------------------------------------------------------------------
+function initPortalGate() {
+  const portalRoll = document.getElementById("portal-input-roll");
+  const portalSalt = document.getElementById("portal-input-salt");
+  const topRoll = document.getElementById("input-roll-no");
+  const topSalt = document.getElementById("input-secret-salt");
+
+  const btnStudentEnter = document.getElementById("btn-portal-student-enter");
+  const btnFacultyEnter = document.getElementById("btn-portal-faculty-enter");
+  const btnArenaEnter = document.getElementById("btn-portal-arena-enter");
+  const btnDemoFill = document.getElementById("btn-portal-demo-fill");
+  const btnGenSalt = document.getElementById("btn-portal-gen-salt");
+  const btnFacFill = document.getElementById("btn-portal-fac-fill");
+  const btnExit = document.getElementById("btn-back-to-portal");
+
+  // 1. Quick-Fill Student Demo
+  if (btnDemoFill && portalRoll && portalSalt) {
+    btnDemoFill.addEventListener("click", () => {
+      portalRoll.value = "2601010043";
+      portalSalt.value = "krmu2026_salt";
+      if (topRoll) topRoll.value = "2601010043";
+      if (topSalt) topSalt.value = "krmu2026_salt";
+      showToast("Pre-filled Student credentials (Roll: 2601010043).", "info");
+    });
+  }
+
+  // 2. Cryptographic Salt Generator
+  if (btnGenSalt && portalSalt) {
+    btnGenSalt.addEventListener("click", () => {
+      const arr = new Uint8Array(16);
+      window.crypto.getRandomValues(arr);
+      const hex = Array.from(arr).map(b => b.toString(16).padStart(2, "0")).join("");
+      const generated = `krmu_${hex}`;
+      portalSalt.value = generated;
+      if (topSalt) topSalt.value = generated;
+      showToast("Generated cryptographic 128-bit private salt.", "info");
+    });
+  }
+
+  // 3. Quick-Fill Faculty Demo
+  if (btnFacFill) {
+    btnFacFill.addEventListener("click", () => {
+      const email = document.getElementById("portal-input-faculty-email");
+      const pass = document.getElementById("portal-input-faculty-passcode");
+      if (email) email.value = "prof.sharma@krmangalam.edu.in";
+      if (pass) pass.value = "KRMU-FAC-2026";
+      showToast("Pre-filled Faculty credentials (Prof. Sharma).", "info");
+    });
+  }
+
+  // 4. Enter Student Workspace
+  if (btnStudentEnter) {
+    btnStudentEnter.addEventListener("click", async () => {
+      const roll = (portalRoll ? portalRoll.value : "").trim();
+      const salt = (portalSalt ? portalSalt.value : "").trim();
+
+      if (!roll) {
+        showToast("Please enter your institutional roll number.", "warning");
+        if (portalRoll) portalRoll.focus();
+        return;
+      }
+      if (salt.length < 8) {
+        showToast("Secret salt must be at least 8 characters long.", "warning");
+        if (portalSalt) portalSalt.focus();
+        return;
+      }
+
+      // Mirror to top bar inputs
+      if (topRoll) topRoll.value = roll;
+      if (topSalt) topSalt.value = salt;
+
+      btnStudentEnter.disabled = true;
+      btnStudentEnter.innerHTML = "<span>Anchoring Zero-Knowledge Ghost...</span>";
+
+      try {
+        const resp = await fetch("/api/auth/commit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ roll_no: roll, secret_salt: salt }),
+        });
+
+        if (!resp.ok) {
+          const err = await resp.json();
+          throw new Error(err.detail || "Commitment anchoring failed");
+        }
+
+        const data = await resp.json();
+        state.currentGhost = data;
+
+        // Update Top Bar Pills
+        const aliasEl = document.getElementById("pill-ghost-alias");
+        const eloEl = document.getElementById("pill-elo");
+        const trustEl = document.getElementById("pill-trust");
+        if (aliasEl) aliasEl.textContent = data.alias;
+        if (eloEl) eloEl.textContent = String(data.elo_rating);
+        if (trustEl) trustEl.textContent = `${data.human_trust_score}%`;
+
+        // Pre-populate claim tab inputs
+        const claimRoll = document.getElementById("claim-roll-no");
+        const claimSalt = document.getElementById("claim-secret-salt");
+        if (claimRoll) claimRoll.value = roll;
+        if (claimSalt) claimSalt.value = salt;
+
+        // Switch to Workspace
+        showWorkspace(`Student (${data.alias})`, "bg-emerald-950 text-emerald-400 border-emerald-800");
+        switchWorkspaceTab("tab-split-duel");
+
+        showToast(`Zero-Knowledge Commitment Anchored: ${data.alias} (ELO: ${data.elo_rating})`, "success");
+      } catch (err) {
+        showToast(`Commitment error: ${err.message}`, "error");
+      } finally {
+        btnStudentEnter.disabled = false;
+        btnStudentEnter.innerHTML = "<span>Enter Student Workspace &rarr;</span>";
+      }
+    });
+  }
+
+  // 5. Enter Faculty Console
+  if (btnFacultyEnter) {
+    btnFacultyEnter.addEventListener("click", () => {
+      showWorkspace("Faculty (Dr. Sharma • CSE-1C)", "bg-amber-950 text-amber-400 border-amber-800");
+      switchWorkspaceTab("tab-heatmap");
+      loadHeatmapData();
+      showToast("Opened Faculty Telemetry & Remedial Console.", "info");
+    });
+  }
+
+  // 6. Enter Live 1v1 Arena
+  if (btnArenaEnter) {
+    btnArenaEnter.addEventListener("click", async () => {
+      // Ensure student identity exists for matchmaking
+      if (!state.currentGhost) {
+        try {
+          const guestRoll = "GUEST_" + Math.floor(1000 + Math.random() * 9000);
+          const guestSalt = "krmu_arena_guest_salt";
+          if (topRoll) topRoll.value = guestRoll;
+          if (topSalt) topSalt.value = guestSalt;
+
+          const resp = await fetch("/api/auth/commit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ roll_no: guestRoll, secret_salt: guestSalt }),
+          });
+
+          if (resp.ok) {
+            const data = await resp.json();
+            state.currentGhost = data;
+            const aliasEl = document.getElementById("pill-ghost-alias");
+            const eloEl = document.getElementById("pill-elo");
+            if (aliasEl) aliasEl.textContent = data.alias;
+            if (eloEl) eloEl.textContent = String(data.elo_rating);
+          }
+        } catch (e) {
+          console.warn("Guest arena anchor fallback:", e);
+        }
+      }
+
+      showWorkspace("1v1 Arena Mode", "bg-cyan-950 text-cyan-400 border-cyan-800");
+      switchWorkspaceTab("tab-split-duel");
+      showToast("1v1 Arena armed. Click 'Start 1v1 Duel' or edit code to begin.", "info");
+    });
+  }
+
+  // 7. Exit to Portal
+  if (btnExit) {
+    btnExit.addEventListener("click", () => {
+      if (state.isDuelActive) {
+        stopDuelSession();
+      }
+      showPortalGate();
+      showToast("Returned to CampusGhosts Role Gateway.", "info");
+    });
+  }
+}
+
+function showPortalGate() {
+  const portalView = document.getElementById("view-portal-gate");
+  const workspaceView = document.getElementById("view-app-workspace");
+  if (portalView) portalView.classList.remove("hidden");
+  if (workspaceView) workspaceView.classList.add("hidden");
+}
+
+function showWorkspace(roleTitle, roleBadgeClass) {
+  const portalView = document.getElementById("view-portal-gate");
+  const workspaceView = document.getElementById("view-app-workspace");
+  const roleBadge = document.getElementById("header-role-badge");
+
+  if (portalView) portalView.classList.add("hidden");
+  if (workspaceView) workspaceView.classList.remove("hidden");
+
+  if (roleBadge && roleTitle) {
+    roleBadge.textContent = roleTitle;
+    if (roleBadgeClass) {
+      roleBadge.className = `px-2 py-0.5 rounded text-[10px] font-mono font-semibold border shrink-0 ${roleBadgeClass}`;
+    }
+  }
+}
+
+function switchWorkspaceTab(tabId) {
+  const targetTabBtn = document.querySelector(`button[data-tab="${tabId}"]`);
+  if (targetTabBtn) {
+    targetTabBtn.click();
   }
 }
 

@@ -56,38 +56,246 @@
 <body class="h-screen flex flex-col overflow-hidden text-xs select-none">
 
   <!-- ══════════════════════════════════════════════════════════════════════ -->
-  <!-- TOP BAR: Auth Commitment & Status Pills                               -->
+  <!-- VIEW 0: 3-CARD INSTITUTIONAL ROLE GATEWAY (Student | Faculty | Arena)  -->
   <!-- ══════════════════════════════════════════════════════════════════════ -->
-  <header class="h-14 border-b border-zinc-800 bg-[#111113] px-4 flex items-center justify-between shrink-0 gap-4">
-    <!-- Brand Title -->
-    <div class="flex items-center gap-2 shrink-0">
-      <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
-      <span class="font-bold tracking-tight text-sm text-zinc-100 flex items-center gap-1.5">
-        CampusGhosts <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 font-normal">v2.0</span>
-      </span>
+  <div id="view-portal-gate" class="h-screen w-screen flex flex-col items-center justify-between p-6 overflow-y-auto bg-[#09090B]">
+    <!-- Brand Hero Header -->
+    <div class="flex flex-col items-center mt-4 mb-6 text-center max-w-2xl shrink-0">
+      <div class="flex items-center gap-2.5 mb-2">
+        <div class="w-9 h-9 rounded-lg bg-zinc-900 border border-zinc-700/80 flex items-center justify-center shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L3 7v10l9 5 9-5V7l-9-5Z"/>
+            <path d="M12 22V12"/>
+            <path d="M12 12 3 7"/>
+            <path d="m12 12 9-5"/>
+          </svg>
+        </div>
+        <h1 class="text-2xl font-bold tracking-tight text-zinc-100 flex items-center gap-2">
+          CampusGhosts
+          <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-emerald-400 font-semibold border border-zinc-700">v2.2</span>
+        </h1>
+      </div>
+      <p class="text-xs text-zinc-400 leading-relaxed max-w-xl">
+        Zero-Knowledge Competitive Systems Coding Arena &amp; Differential Telemetry Architecture. Early programming mistakes remain mathematically dissociated from institutional student identities.
+      </p>
+      <div class="flex items-center gap-3 mt-3 text-[11px] font-mono text-zinc-500">
+        <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Split-Table SQLite</span>
+        <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>k-Anonymity (k &ge; 5)</span>
+        <span class="flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-cyan-500"></span>Behavioral Anti-Cheat</span>
+      </div>
     </div>
 
-    <!-- Blind Commitment Input Form -->
-    <div class="flex items-center gap-2 flex-1 max-w-2xl">
-      <div class="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 flex-1">
-        <span class="text-zinc-500 font-mono text-[11px]">Roll:</span>
-        <input id="input-roll-no" type="text" placeholder="Roll No (e.g. 2601010043)" class="bg-transparent border-none outline-none font-mono text-xs w-full text-zinc-200" />
+    <!-- 3-Column Role Gateway Cards Grid -->
+    <div class="w-full max-w-5xl grid grid-cols-1 md:grid-cols-3 gap-5 my-auto">
+
+      <!-- Card 1: Student ZK Portal -->
+      <div class="bg-[#111113] border border-zinc-800 hover:border-emerald-700/60 transition-all rounded-lg p-5 flex flex-col justify-between relative overflow-hidden shadow-xl">
+        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500/30 via-emerald-500 to-emerald-500/20"></div>
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 flex items-center justify-center font-bold text-xs">ZK</span>
+              <h2 class="text-sm font-bold text-zinc-100">Student ZK Portal</h2>
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">Private Ghost</span>
+          </div>
+          <p class="text-[11px] text-zinc-400 mb-4 leading-relaxed">
+            Anchor your institutional roll number with a private salt into an untraceable Ghost identity. Zero foreign keys, complete privacy.
+          </p>
+
+          <form id="portal-form-student" onsubmit="event.preventDefault();" class="space-y-3">
+            <div>
+              <label class="block text-[10px] font-mono text-zinc-400 uppercase tracking-wider mb-1">Institutional Roll Number</label>
+              <input id="portal-input-roll" type="text" placeholder="e.g. 2601010043" class="w-full bg-zinc-950 border border-zinc-800 rounded px-2.5 py-1.5 font-mono text-xs text-zinc-200 outline-none focus:border-emerald-600 transition-colors" />
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-mono text-zinc-400 uppercase tracking-wider mb-1">Private Secret Salt</label>
+              <div class="flex gap-1.5">
+                <input id="portal-input-salt" type="password" placeholder="e.g. krmu2026_salt" class="flex-1 bg-zinc-950 border border-zinc-800 rounded px-2.5 py-1.5 font-mono text-xs text-zinc-200 outline-none focus:border-emerald-600 transition-colors" />
+                <button type="button" id="btn-portal-gen-salt" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 px-2 py-1.5 rounded font-mono text-[10px] border border-zinc-700 transition-colors cursor-pointer" title="Generate Cryptographic Salt">
+                  Random
+                </button>
+              </div>
+            </div>
+
+            <button type="button" id="btn-portal-student-enter" class="w-full bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-bold py-2 rounded text-xs font-mono transition-colors flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-950/40 mt-1 cursor-pointer">
+              <span>Enter Student Workspace &rarr;</span>
+            </button>
+          </form>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
+          <span class="text-zinc-500">Live Demo:</span>
+          <button type="button" id="btn-portal-demo-fill" class="text-emerald-400 hover:underline font-mono text-[10px] cursor-pointer">
+            Quick-Fill (2601010043)
+          </button>
+        </div>
       </div>
 
-      <div class="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 flex-1">
-        <span class="text-zinc-500 font-mono text-[11px]">Salt:</span>
-        <input id="input-secret-salt" type="text" placeholder="Private secret salt (min 8 chars)" class="bg-transparent border-none outline-none font-mono text-xs flex-1 text-zinc-200" />
-        <button id="btn-gen-salt" title="Generate Cryptographic Salt" class="text-[10px] font-mono text-zinc-400 hover:text-zinc-200 px-1 rounded hover:bg-zinc-800">
-          Random
+      <!-- Card 2: Faculty Telemetry Portal -->
+      <div class="bg-[#111113] border border-zinc-800 hover:border-amber-700/60 transition-all rounded-lg p-5 flex flex-col justify-between relative overflow-hidden shadow-xl">
+        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500/30 via-amber-500 to-amber-500/20"></div>
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded bg-amber-950 text-amber-400 border border-amber-800 flex items-center justify-center font-bold text-xs">&part;</span>
+              <h2 class="text-sm font-bold text-zinc-100">Faculty Portal</h2>
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-800">k &ge; 5 Active</span>
+          </div>
+          <p class="text-[11px] text-zinc-400 mb-4 leading-relaxed">
+            Inspect $k$-anonymized concept clusters, trigger 10-minute remedial plans, audit schema foreign key isolation, and monitor lab progress.
+          </p>
+
+          <form id="portal-form-faculty" onsubmit="event.preventDefault();" class="space-y-3">
+            <div>
+              <label class="block text-[10px] font-mono text-zinc-400 uppercase tracking-wider mb-1">Faculty Institutional Email</label>
+              <input id="portal-input-faculty-email" type="email" value="prof.sharma@krmangalam.edu.in" class="w-full bg-zinc-950 border border-zinc-800 rounded px-2.5 py-1.5 font-mono text-xs text-zinc-200 outline-none focus:border-amber-600 transition-colors" />
+            </div>
+
+            <div>
+              <label class="block text-[10px] font-mono text-zinc-400 uppercase tracking-wider mb-1">Department Access Key</label>
+              <input id="portal-input-faculty-passcode" type="password" value="KRMU-FAC-2026" class="w-full bg-zinc-950 border border-zinc-800 rounded px-2.5 py-1.5 font-mono text-xs text-zinc-200 outline-none focus:border-amber-600 transition-colors" />
+            </div>
+
+            <button type="button" id="btn-portal-faculty-enter" class="w-full bg-amber-600 hover:bg-amber-500 text-zinc-950 font-bold py-2 rounded text-xs font-mono transition-colors flex items-center justify-center gap-1.5 shadow-lg shadow-amber-950/40 mt-1 cursor-pointer">
+              <span>Open Telemetry Console &rarr;</span>
+            </button>
+          </form>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
+          <span class="text-zinc-500">Live Demo:</span>
+          <button type="button" id="btn-portal-fac-fill" class="text-amber-400 hover:underline font-mono text-[10px] cursor-pointer">
+            Quick-Fill Faculty
+          </button>
+        </div>
+      </div>
+
+      <!-- Card 3: Live 1v1 Ghost Arena -->
+      <div class="bg-[#111113] border border-zinc-800 hover:border-cyan-700/60 transition-all rounded-lg p-5 flex flex-col justify-between relative overflow-hidden shadow-xl">
+        <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500/30 via-cyan-500 to-cyan-500/20"></div>
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <span class="w-6 h-6 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 flex items-center justify-center font-bold text-xs">&#9876;</span>
+              <h2 class="text-sm font-bold text-zinc-100">Live 1v1 Arena</h2>
+            </div>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">Direct Duel</span>
+          </div>
+          <p class="text-[11px] text-zinc-400 mb-4 leading-relaxed">
+            Side-by-side competitive duel against rival ghost keystroke streams with real-time AntiCheatGuard and dynamic test execution.
+          </p>
+
+          <div class="space-y-2 bg-zinc-950 p-3 rounded border border-zinc-800/80 text-[11px] font-mono text-zinc-400 mb-3">
+            <div class="flex items-center gap-2 text-zinc-300">
+              <span class="text-cyan-400 font-bold">&check;</span>
+              <span>Matched institutional ghost replays</span>
+            </div>
+            <div class="flex items-center gap-2 text-zinc-300">
+              <span class="text-cyan-400 font-bold">&check;</span>
+              <span>180s round clock &amp; head-to-head HUD</span>
+            </div>
+            <div class="flex items-center gap-2 text-zinc-300">
+              <span class="text-cyan-400 font-bold">&check;</span>
+              <span>C++ &amp; Python real test verification</span>
+            </div>
+          </div>
+
+          <button type="button" id="btn-portal-arena-enter" class="w-full bg-cyan-600 hover:bg-cyan-500 text-zinc-950 font-bold py-2 rounded text-xs font-mono transition-colors flex items-center justify-center gap-1.5 shadow-lg shadow-cyan-950/40 mt-1 cursor-pointer">
+            <span>Launch 1v1 Duel Arena &rarr;</span>
+          </button>
+        </div>
+
+        <div class="mt-4 pt-3 border-t border-zinc-800/80 flex items-center justify-between text-[11px]">
+          <span class="text-zinc-500">Practice Mode:</span>
+          <span class="text-cyan-400 font-mono text-[10px]">Instant Guest Access</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Institutional Footer -->
+    <div class="text-center text-[10px] font-mono text-zinc-600 pb-2 shrink-0">
+      K.R. Mangalam University &bull; Dept. of Computer Science &amp; Engineering &bull; Privacy-Preserving Coding Telemetry
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <!-- MAIN WORKSPACE VIEW (Encapsulating Top Bar & Duel/Faculty Split)       -->
+  <!-- ══════════════════════════════════════════════════════════════════════ -->
+  <div id="view-app-workspace" class="hidden flex-1 flex flex-col overflow-hidden">
+
+    <!-- TOP BAR: Auth Commitment & Status Pills -->
+    <header class="h-14 border-b border-zinc-800 bg-[#111113] px-4 flex items-center justify-between shrink-0 gap-3">
+      <!-- Brand Title & Exit Button -->
+      <div class="flex items-center gap-2 shrink-0">
+        <button id="btn-back-to-portal" class="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 px-2.5 py-1 rounded text-[11px] font-mono flex items-center gap-1 transition-colors cursor-pointer mr-1" title="Exit to Role Gateway Portal">
+          <span>&larr; Exit to Portal</span>
+        </button>
+
+        <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
+        <span class="font-bold tracking-tight text-sm text-zinc-100 flex items-center gap-1.5">
+          CampusGhosts <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 font-normal">v2.0</span>
+        </span>
+        <span id="header-role-badge" class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800 shrink-0">Student Mode</span>
+      </div>
+
+      <!-- Blind Commitment Input Form (Retained in Top Bar) -->
+      <div class="flex items-center gap-2 flex-1 max-w-xl">
+        <div class="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 flex-1">
+          <span class="text-zinc-500 font-mono text-[11px]">Roll:</span>
+          <input id="input-roll-no" type="text" placeholder="Roll No (e.g. 2601010043)" class="bg-transparent border-none outline-none font-mono text-xs w-full text-zinc-200" />
+        </div>
+
+        <div class="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 flex-1">
+          <span class="text-zinc-500 font-mono text-[11px]">Salt:</span>
+          <input id="input-secret-salt" type="text" placeholder="Private secret salt (min 8 chars)" class="bg-transparent border-none outline-none font-mono text-xs flex-1 text-zinc-200" />
+          <button id="btn-gen-salt" title="Generate Cryptographic Salt" class="text-[10px] font-mono text-zinc-400 hover:text-zinc-200 px-1 rounded hover:bg-zinc-800">
+            Random
+          </button>
+        </div>
+
+        <button id="btn-demo-fill" title="Populate demo test credentials" class="text-[10px] font-mono text-zinc-400 hover:text-emerald-400 px-2 py-1.5 rounded border border-zinc-800 hover:border-emerald-600 transition-colors shrink-0">
+          Demo Fill
+        </button>
+
+        <button id="btn-auth-commit" class="bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-semibold px-3 py-1.5 rounded transition-colors text-xs font-mono shrink-0 flex items-center gap-1">
+          <span>Enter as Ghost</span>
         </button>
       </div>
 
-      <button id="btn-demo-fill" title="Populate demo test credentials" class="text-[10px] font-mono text-zinc-400 hover:text-emerald-400 px-2 py-1.5 rounded border border-zinc-800 hover:border-emerald-600 transition-colors shrink-0">
-        Demo Fill
-      </button>
+      <!-- Live Status Pills -->
+      <div class="flex items-center gap-2 shrink-0 font-mono text-[11px]">
+        <!-- Active Ghost Alias -->
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800">
+          <span class="text-zinc-500">Ghost:</span>
+          <span id="pill-ghost-alias" class="text-emerald-400 font-semibold">Not Anchored</span>
+        </div>
 
-      <button id="btn-auth-commit" class="bg-emerald-600 hover:bg-emerald-500 text-zinc-950 font-semibold px-3 py-1.5 rounded transition-colors text-xs font-mono shrink-0 flex items-center gap-1">
-        <span>Enter as Ghost</span>
+        <!-- Current ELO Rating -->
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800">
+          <span class="text-zinc-500">ELO:</span>
+          <span id="pill-elo" class="text-zinc-200 font-bold">1200</span>
+        </div>
+
+        <!-- Human Trust Score -->
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800" title="Bot Detection Trust Score">
+          <span class="text-zinc-500">Trust:</span>
+          <span id="pill-trust" class="text-emerald-400 font-bold">100.0%</span>
+        </div>
+
+        <!-- 3-Strike Tab Counter & Mode Toggle -->
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded bg-zinc-900 border border-zinc-800">
+          <span class="text-zinc-500">Strikes:</span>
+          <span id="pill-strikes" class="text-amber-400 font-bold">0/3</span>
+          <button id="btn-reset-strikes" title="Reset strikes for live rehearsals" class="text-[9px] text-zinc-400 hover:text-zinc-200 ml-1 underline">Reset</button>
+          <span class="text-zinc-600">|</span>
+          <button id="btn-toggle-anticheat-mode" title="Toggle between Strict Duel and Rehearsal mode" class="text-[9px] text-zinc-400 hover:text-cyan-400 font-mono underline">Strict</button>
+        </div>
+      </div>
+    </header>
       </button>
     </div>
 
@@ -462,6 +670,7 @@
       </div>
     </section>
   </main>
+  </div>
 
   <!-- ──────────────────────────────────────────────────────────────────── -->
   <!-- 1v1 DUEL OUTCOME RESOLUTION MODAL                                      -->
